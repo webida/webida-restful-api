@@ -1,0 +1,1742 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "description" : "Minimal, Basic Webida Restful API definitions",
+    "version" : "0.2.0",
+    "title" : "Webida Restful API",
+    "license" : {
+      "name" : "Apache 2.0",
+      "url" : "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "basePath" : "/api",
+  "consumes" : [ "application/json" ],
+  "produces" : [ "application/json", "application/octet-stream" ],
+  "paths" : {
+    "/auth/info" : {
+      "get" : {
+        "tags" : [ "auth" ],
+        "description" : "Gets user information of that can be identified with current access token. Implementations\nshould provide a more restful api based on domain data model. Don\"t override this operation\nfor multi-user system.\n",
+        "operationId" : "getInfo",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "user information",
+            "schema" : {
+              "$ref" : "#/definitions/User"
+            }
+          },
+          "401" : {
+            "description" : "auth failed",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/auth/info.js"
+      }
+    },
+    "/auth/login" : {
+      "post" : {
+        "tags" : [ "auth" ],
+        "description" : "A \"VERY\" basic authentication, required to use webida-simple-auth security scheme.\n\nService / Product implementations who need better security, should override this operation\nor add their own login api or some other specs like OAuth2. Simple auth is not suitable\nfor large-sacle, multi-tennant service, for the scheme assumes a single, trusted user only.\n\nLogging-in with master token, the generated access token inherits all restriction from it.\nOn the other hand, normal log-in with login id & password creates an unrestricted access\ntoken, with reasonably short expiration time.\n\nEvery client should spawn another access token with issueToken API before current\naccess token expires, inheriting session id from current token. To save remote access\ninfo, client should create a (restricted but long-ttl) master token to start IDE from\nremote. The remote client should not use the unrestricted acccess token from login\nto use any other perpose than finding available workspaces, and should not refresh\nthe token. (Let user log-in again)\n",
+        "operationId" : "login",
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "body",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/definitions/Credential"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "login success",
+            "schema" : {
+              "$ref" : "#/definitions/Token"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "x-handler" : "handlers/auth/login.js"
+      }
+    },
+    "/auth/token" : {
+      "post" : {
+        "tags" : [ "auth" ],
+        "description" : "Creates new token from current access token, inheriting workspace id & session id\nDuration of generated token is (and should not be) parameterizable. Server should\nset proper time, respecting \"reconnect\" period of web socket clients. Most of the\nsocket implementations (including socket.io) do not provide any ways to change\nconnection parameters (header or query) while reconnecting to server.\n",
+        "operationId" : "issueToken",
+        "parameters" : [ {
+          "name" : "type",
+          "in" : "query",
+          "required" : true,
+          "type" : "string",
+          "enum" : [ "MASTER", "ACCESS" ]
+        }, {
+          "name" : "workspaceId",
+          "in" : "query",
+          "description" : "recommended to issue a MASTER type token to restrict remote access",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "new token generated",
+            "schema" : {
+              "$ref" : "#/definitions/Token"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/auth/token.js"
+      }
+    },
+    "/remotes" : {
+      "get" : {
+        "tags" : [ "remotes" ],
+        "description" : "Get all access informations See RemoteWorkspaceAccess definition for details (no fancy\nfind / search feature yet)\n",
+        "operationId" : "findRemoteAccesses",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "array of remote workspaces",
+            "schema" : {
+              "type" : "array",
+              "items" : {
+                "$ref" : "#/definitions/RemoteAccess"
+              }
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/remotes/findRemoteAccesses.js"
+      },
+      "put" : {
+        "tags" : [ "remotes" ],
+        "description" : "create or update a remote workspace access information",
+        "operationId" : "putRemoteAccess",
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "body",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/definitions/RemoteAccess"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "schema" : {
+              "$ref" : "#/definitions/RestOK"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ]
+      },
+      "delete" : {
+        "tags" : [ "remotes" ],
+        "description" : "delete a remote workspace",
+        "operationId" : "removeRemoteAccess",
+        "parameters" : [ {
+          "name" : "workspaceId",
+          "in" : "query",
+          "description" : "workspace Id of remote workspace",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "removed remote workspace access info",
+            "schema" : {
+              "$ref" : "#/definitions/RemoteAccess"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ]
+      }
+    },
+    "/sessions" : {
+      "get" : {
+        "tags" : [ "session" ],
+        "description" : "get all / some webida sessions established to server",
+        "operationId" : "findSessions",
+        "parameters" : [ {
+          "name" : "workspaceId",
+          "in" : "query",
+          "description" : "find only sessions working on some given workspace",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "array of sessions",
+            "schema" : {
+              "type" : "array",
+              "items" : {
+                "$ref" : "#/definitions/Session"
+              }
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/session/findSessions.js"
+      }
+    },
+    "/sessions/{sessionId}" : {
+      "get" : {
+        "tags" : [ "session" ],
+        "description" : "get a session object by id",
+        "operationId" : "getSession",
+        "parameters" : [ {
+          "name" : "sessionId",
+          "in" : "path",
+          "description" : "webida session id (usually different from socket id from sock.io)",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "session",
+            "schema" : {
+              "$ref" : "#/definitions/Session"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/session/getSession.js"
+      },
+      "delete" : {
+        "tags" : [ "session" ],
+        "description" : "close session with timeout",
+        "operationId" : "closeSession",
+        "parameters" : [ {
+          "name" : "sessionId",
+          "in" : "path",
+          "description" : "webida session id (usually different from socket id from sock.io)",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "closeAfter",
+          "in" : "query",
+          "description" : "waiting time before actual closing, to let client save files and prevent reconnect\n",
+          "required" : true,
+          "type" : "integer"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK.",
+            "schema" : {
+              "$ref" : "#/definitions/RestOK"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/session/closeSession.js"
+      }
+    },
+    "/wfs/{wfsId}/any/{wfsPath}" : {
+      "get" : {
+        "tags" : [ "wfs" ],
+        "description" : "Get stats of given path. (stat() returns \"stats\" object in node and POSIX system)\nSince we've no ctime/atime in Stats class, some file system changing events will\nsend 'exactly same' stats object. This API should be called only when stats of some\nfile system path is stale for unknown reason (e.g. losting change events).\nUse dirTree operation and session events to detect stats, if possible. This API\ncan be used to check a path is valid, existing one, but it's not recommended to\ncheck existence of individual paths by API. Clients should use dirTree and session\nevents to synchorize some in-app file system with webida file system.\n",
+        "operationId" : "stat",
+        "parameters" : [ {
+          "name" : "wfsId",
+          "in" : "path",
+          "description" : "webida file system id (same to workspace id) to access.",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "wfsPath",
+          "in" : "path",
+          "description" : "webida file system path to access. without heading /. should be placed at the end of path arguments\n",
+          "required" : true,
+          "type" : "string",
+          "pattern" : ".*"
+        }, {
+          "name" : "ignoreError",
+          "in" : "query",
+          "description" : "flag to ignore stat errors to check existence only. If this flag is true,\nserver will returns 'DUMMY' type stats object instead of 404 error when\ngiven path does not exists. (invalid wfsId will produce 400 error, not 404)\n",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "stats object.",
+            "schema" : {
+              "$ref" : "#/definitions/Stats"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/wfs/stat.js"
+      },
+      "put" : {
+        "tags" : [ "wfs" ],
+        "description" : "Copy to given path. Works like cp -r command, with some funny options.\nCopying a dir on to existing file will return error if removeExisting is false.\nIf removeExisting is true, destination path will be 'clobbed' before copying file.\nSo, delete event will be delivered first, before creating new dir/files.\nAnd, plz, Do not use this operation to duplicate socket/fifo/devices.\n",
+        "operationId" : "copy",
+        "parameters" : [ {
+          "name" : "wfsId",
+          "in" : "path",
+          "description" : "webida file system id (same to workspace id) to access.",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "wfsPath",
+          "in" : "path",
+          "description" : "webida file system path to access. without heading /. should be placed at the end of path arguments\n",
+          "required" : true,
+          "type" : "string",
+          "pattern" : ".*"
+        }, {
+          "name" : "srcPath",
+          "in" : "query",
+          "description" : "source data path of some operations, with have heading /",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "removeExisting",
+          "in" : "query",
+          "description" : "remove any existing file/dir before writing.",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
+        }, {
+          "name" : "followSymbolicLinks",
+          "in" : "query",
+          "description" : "dereference symlinks or not",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
+        }, {
+          "name" : "noPreserveTimestamps",
+          "in" : "query",
+          "description" : "to change default behavior, keep mtime/atime of source files in destination",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
+        }, {
+          "name" : "filterPattern",
+          "in" : "query",
+          "description" : "execute copy if source matches to this regex pattern.",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "schema" : {
+              "$ref" : "#/definitions/RestOK"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/wfs/copy.js"
+      },
+      "delete" : {
+        "tags" : [ "wfs" ],
+        "description" : "delete file or directory",
+        "operationId" : "remove",
+        "parameters" : [ {
+          "name" : "wfsId",
+          "in" : "path",
+          "description" : "webida file system id (same to workspace id) to access.",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "wfsPath",
+          "in" : "path",
+          "description" : "webida file system path to access. without heading /. should be placed at the end of path arguments\n",
+          "required" : true,
+          "type" : "string",
+          "pattern" : ".*"
+        }, {
+          "name" : "recursive",
+          "in" : "query",
+          "description" : "flag to set copy with",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "schema" : {
+              "$ref" : "#/definitions/RestOK"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/wfs/remove.js"
+      }
+    },
+    "/wfs/{wfsId}/dir/{wfsPath}" : {
+      "get" : {
+        "tags" : [ "wfs" ],
+        "description" : "returns a directory tree of given path, for listing dir and managing file system\nerrors while building sub-tree will be ignored and will not be included in result.\n",
+        "operationId" : "dirTree",
+        "parameters" : [ {
+          "name" : "wfsId",
+          "in" : "path",
+          "description" : "webida file system id (same to workspace id) to access.",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "wfsPath",
+          "in" : "path",
+          "description" : "webida file system path to access. without heading /. should be placed at the end of path arguments\n",
+          "required" : true,
+          "type" : "string",
+          "pattern" : ".*"
+        }, {
+          "name" : "maxDepth",
+          "in" : "query",
+          "description" : "Maximum depth of tree. -1 to build a full tree, 0 to stat, 1 to plain list.",
+          "required" : true,
+          "type" : "integer"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "A DirEntry, root of the tree, for given path and depth.",
+            "schema" : {
+              "$ref" : "#/definitions/DirEntry"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/wfs/dirTree.js"
+      },
+      "post" : {
+        "tags" : [ "wfs" ],
+        "description" : "move file or directory to given path. works like mv -r command",
+        "operationId" : "move",
+        "parameters" : [ {
+          "name" : "wfsId",
+          "in" : "path",
+          "description" : "webida file system id (same to workspace id) to access.",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "wfsPath",
+          "in" : "path",
+          "description" : "webida file system path to access. without heading /. should be placed at the end of path arguments\n",
+          "required" : true,
+          "type" : "string",
+          "pattern" : ".*"
+        }, {
+          "name" : "srcPath",
+          "in" : "query",
+          "description" : "source data path of some operations, with have heading /",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "removeExisting",
+          "in" : "query",
+          "description" : "remove any existing file/dir before writing.",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "schema" : {
+              "$ref" : "#/definitions/RestOK"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/wfs/move.js"
+      },
+      "put" : {
+        "tags" : [ "wfs" ],
+        "description" : "create a directory at the path. returns error when wfsPath exists and not empty\nthis API always creates parent directories if needed.\n",
+        "operationId" : "createDir",
+        "parameters" : [ {
+          "name" : "wfsId",
+          "in" : "path",
+          "description" : "webida file system id (same to workspace id) to access.",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "wfsPath",
+          "in" : "path",
+          "description" : "webida file system path to access. without heading /. should be placed at the end of path arguments\n",
+          "required" : true,
+          "type" : "string",
+          "pattern" : ".*"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "schema" : {
+              "$ref" : "#/definitions/RestOK"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/wfs/createDir.js"
+      }
+    },
+    "/wfs/{wfsId}/file/{wfsPath}" : {
+      "get" : {
+        "tags" : [ "wfs" ],
+        "description" : "read file data on path",
+        "operationId" : "readFile",
+        "parameters" : [ {
+          "name" : "wfsId",
+          "in" : "path",
+          "description" : "webida file system id (same to workspace id) to access.",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "wfsPath",
+          "in" : "path",
+          "description" : "webida file system path to access. without heading /. should be placed at the end of path arguments\n",
+          "required" : true,
+          "type" : "string",
+          "pattern" : ".*"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "File contents. Content-Type is application/octet-stream or follows file name extension.\n",
+            "schema" : {
+              "type" : "file"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/wfs/readFile.js"
+      },
+      "post" : {
+        "tags" : [ "wfs" ],
+        "description" : "Rename a file or directory to. This api does not overwrite existing one.",
+        "operationId" : "rename",
+        "parameters" : [ {
+          "name" : "wfsId",
+          "in" : "path",
+          "description" : "webida file system id (same to workspace id) to access.",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "wfsPath",
+          "in" : "path",
+          "description" : "webida file system path to access. without heading /. should be placed at the end of path arguments\n",
+          "required" : true,
+          "type" : "string",
+          "pattern" : ".*"
+        }, {
+          "name" : "srcPath",
+          "in" : "query",
+          "description" : "source data path of some operations, with have heading /",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "ensure",
+          "in" : "query",
+          "description" : "flag to create all parent directories to create file or dir, like mkdir -p",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "schema" : {
+              "$ref" : "#/definitions/RestOK"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/wfs/rename.js"
+      },
+      "put" : {
+        "tags" : [ "wfs" ],
+        "description" : "Creates / updates file with body data",
+        "operationId" : "writeFile",
+        "consumes" : [ "multipart/form-data" ],
+        "parameters" : [ {
+          "name" : "wfsId",
+          "in" : "path",
+          "description" : "webida file system id (same to workspace id) to access.",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "wfsPath",
+          "in" : "path",
+          "description" : "webida file system path to access. without heading /. should be placed at the end of path arguments\n",
+          "required" : true,
+          "type" : "string",
+          "pattern" : ".*"
+        }, {
+          "name" : "ensure",
+          "in" : "query",
+          "description" : "flag to create all parent directories to create file or dir, like mkdir -p",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
+        }, {
+          "name" : "data",
+          "in" : "formData",
+          "description" : "file contents to write.",
+          "required" : true,
+          "type" : "file"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "schema" : {
+              "$ref" : "#/definitions/RestOK"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/wfs/writeFile.js"
+      }
+    },
+    "/wfs/{wfsId}/ops/replace" : {
+      "post" : {
+        "tags" : [ "ops" ],
+        "description" : "replace file contents with regex matching",
+        "operationId" : "replace",
+        "parameters" : [ {
+          "name" : "wfsId",
+          "in" : "path",
+          "description" : "webida file system id (same to workspace id) to access.",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "wfsPathList",
+          "in" : "query",
+          "description" : "array of wfsPath, with heading /  (collection format may be changed by implementation)",
+          "required" : true,
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          },
+          "collectionFormat" : "multi"
+        }, {
+          "name" : "pattern",
+          "in" : "query",
+          "description" : "regex pattern to match",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "replaceTo",
+          "in" : "query",
+          "description" : "string to replace with",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "ignoreCase",
+          "in" : "query",
+          "description" : "regex matching option to ignore case",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
+        }, {
+          "name" : "wholeWord",
+          "in" : "query",
+          "description" : "regex matching option to match whole word",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "done",
+            "schema" : {
+              "$ref" : "#/definitions/RestOK"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/wfs/replace.js"
+      }
+    },
+    "/wfs/{wfsId}/ops/search/{wfsPath}" : {
+      "get" : {
+        "tags" : [ "ops" ],
+        "description" : "search files in some path, with given pattern",
+        "operationId" : "search",
+        "parameters" : [ {
+          "name" : "wfsId",
+          "in" : "path",
+          "description" : "webida file system id (same to workspace id) to access.",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "wfsPath",
+          "in" : "path",
+          "description" : "webida file system path to access. without heading /. should be placed at the end of path arguments\n",
+          "required" : true,
+          "type" : "string",
+          "pattern" : ".*"
+        }, {
+          "name" : "pattern",
+          "in" : "query",
+          "description" : "regex pattern to match",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "ignoreCase",
+          "in" : "query",
+          "description" : "regex matching option to ignore case",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
+        }, {
+          "name" : "wholeWord",
+          "in" : "query",
+          "description" : "regex matching option to match whole word",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "stats list (define SearchResult first)",
+            "schema" : {
+              "type" : "object",
+              "additionalProperties" : {
+                "$ref" : "#/definitions/Match"
+              }
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/wfs/search.js"
+      }
+    },
+    "/workspaces" : {
+      "get" : {
+        "tags" : [ "workspace" ],
+        "description" : "Finds workspaces (no find/search parameters yet). Requires an unrestricted access token.  \n",
+        "operationId" : "findWorkspaces",
+        "parameters" : [ {
+          "name" : "disposable",
+          "in" : "query",
+          "description" : "include disposable workspaces or not",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "array of local workspaces",
+            "schema" : {
+              "type" : "array",
+              "items" : {
+                "$ref" : "#/definitions/Workspace"
+              }
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/workspace/findWorkspaces.js"
+      },
+      "post" : {
+        "tags" : [ "workspace" ],
+        "description" : "Creates a new workspace with given local path. Requires an unrestricted access token. \n",
+        "operationId" : "createWorkspace",
+        "parameters" : [ {
+          "name" : "localPath",
+          "in" : "query",
+          "description" : "a real, local path of the system (not unixified)",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "name",
+          "in" : "query",
+          "description" : "workspace name property",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "description",
+          "in" : "query",
+          "description" : "workspace name property",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "newly created local workspace",
+            "schema" : {
+              "$ref" : "#/definitions/Workspace"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/workspace/createWorkspace.js"
+      }
+    },
+    "/workspaces/{workspaceId}" : {
+      "get" : {
+        "tags" : [ "workspace" ],
+        "description" : "get a workspace object by id",
+        "operationId" : "getWorkspace",
+        "parameters" : [ {
+          "name" : "workspaceId",
+          "in" : "path",
+          "description" : "webida workspace id (usually same to file system id, wfsId)",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "the workspace",
+            "schema" : {
+              "$ref" : "#/definitions/Workspace"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/workspace/getWorkspace.js"
+      },
+      "put" : {
+        "tags" : [ "workspace" ],
+        "description" : "Updates workspace. Some protected properties will not be changed by this api. Requires \nproper access rights in access token. \n",
+        "operationId" : "updateWorkspace",
+        "parameters" : [ {
+          "name" : "workspaceId",
+          "in" : "path",
+          "description" : "webida workspace id (usually same to file system id, wfsId)",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "updated Workspace object",
+            "schema" : {
+              "$ref" : "#/definitions/Workspace"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/workspace/updateWorkspace.js"
+      },
+      "delete" : {
+        "tags" : [ "workspace" ],
+        "description" : "This operation will remove the requested workspace when\n  1) all sessions are closed for request (will be notified by server)\n  2) excedded time limit value in closeAfter parameter\n  3) server goes down after accepting remove request\n\"willBeRemovedAt\" property can be set \"only\" by this api.\nThis API requires \"unrestricted\" access token. Even an access token has matching\nworkspace id, removing an workspace is rejected.\n",
+        "operationId" : "removeWorkspace",
+        "parameters" : [ {
+          "name" : "workspaceId",
+          "in" : "path",
+          "description" : "webida workspace id (usually same to file system id, wfsId)",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "closeAfter",
+          "in" : "query",
+          "description" : "Time in seconds to wait for all sessions save & close their data.",
+          "required" : false,
+          "type" : "integer",
+          "default" : 0
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "removed Workspace object",
+            "schema" : {
+              "$ref" : "#/definitions/Workspace"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/workspace/removeWorkspace.js"
+      }
+    },
+    "/workspaces/{workspaceId}/exec" : {
+      "get" : {
+        "tags" : [ "workspace" ],
+        "description" : "get all spawned process info, created by exec api, on given workspace. set workspace id to\n\"*\" to all processes info. This operation requires proper access rights (unrestricted or\nmatching workspace id in access token with parameter)\n",
+        "operationId" : "getChildProcs",
+        "parameters" : [ {
+          "name" : "workspaceId",
+          "in" : "path",
+          "description" : "webida workspace id (usually same to file system id, wfsId)",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "includeExec",
+          "in" : "query",
+          "description" : "include processes created by synchronous exec request",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "execution result with all captured standard ouput and error",
+            "schema" : {
+              "type" : "array",
+              "items" : {
+                "$ref" : "#/definitions/ChildProcess"
+              }
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "x-handler" : "handlers/workspace/getChildProcs.js"
+      },
+      "post" : {
+        "tags" : [ "workspace" ],
+        "description" : "execute a shell command on this workspace",
+        "operationId" : "exec",
+        "parameters" : [ {
+          "name" : "workspaceId",
+          "in" : "path",
+          "description" : "webida workspace id (usually same to file system id, wfsId)",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "async",
+          "in" : "query",
+          "description" : "Spawn a child process for given command and returns a child process info only. ,\nActual output (stream of message) will be delivered to web socket channel, with\nroom id /sessions/asyn-{Execution#id}\n",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/definitions/Execution"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "execution result with all captured standard ouput and error",
+            "schema" : {
+              "$ref" : "#/definitions/ExecutionResult"
+            }
+          },
+          "201" : {
+            "description" : "spawned process infomation created by async execution",
+            "schema" : {
+              "$ref" : "#/definitions/ChildProcess"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/workspace/exec.js"
+      },
+      "delete" : {
+        "tags" : [ "workspace" ],
+        "description" : "cancels an execution, if possible. Killing process may not be graceful.",
+        "operationId" : "cancel",
+        "parameters" : [ {
+          "name" : "workspaceId",
+          "in" : "path",
+          "description" : "webida workspace id (usually same to file system id, wfsId)",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "execId",
+          "in" : "query",
+          "description" : "the id of execution (different from pid!)",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "schema" : {
+              "$ref" : "#/definitions/RestOK"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ]
+      }
+    },
+    "/workspaces/{workspaceId}/metadata/{objectPath}" : {
+      "get" : {
+        "tags" : [ "workspace" ],
+        "description" : "read a metadata file from a workspace.",
+        "operationId" : "readMetadata",
+        "parameters" : [ {
+          "name" : "workspaceId",
+          "in" : "path",
+          "description" : "webida workspace id (usually same to file system id, wfsId)",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "objectPath",
+          "in" : "path",
+          "description" : "the path (filename without .json) of metadata, without heading /",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "the metadata file contents at given path",
+            "schema" : {
+              "type" : "file"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "x-handler" : "handlers/workspace/readMetadata.js"
+      },
+      "put" : {
+        "tags" : [ "workspace" ],
+        "description" : "write a metadata file at given path. missing parents will be created.",
+        "operationId" : "writeMetadata",
+        "parameters" : [ {
+          "name" : "workspaceId",
+          "in" : "path",
+          "description" : "webida workspace id (usually same to file system id, wfsId)",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "objectPath",
+          "in" : "path",
+          "description" : "the path (filename without .json) of metadata, without heading /",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "data",
+          "in" : "formData",
+          "description" : "file contents to write.",
+          "required" : true,
+          "type" : "file"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK. saved.",
+            "schema" : {
+              "$ref" : "#/definitions/RestOK"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ],
+        "x-handler" : "handlers/workspace/writeMetadata.js"
+      },
+      "delete" : {
+        "tags" : [ "workspace" ],
+        "description" : "delete metadata of given path",
+        "operationId" : "removeMetadata",
+        "parameters" : [ {
+          "name" : "workspaceId",
+          "in" : "path",
+          "description" : "webida workspace id (usually same to file system id, wfsId)",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "objectPath",
+          "in" : "path",
+          "description" : "the path (filename without .json) of metadata, without heading /",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK. removed",
+            "schema" : {
+              "$ref" : "#/definitions/RestOK"
+            }
+          },
+          "default" : {
+            "description" : "Error",
+            "schema" : {
+              "$ref" : "#/definitions/RestError"
+            }
+          }
+        },
+        "security" : [ {
+          "webida-simple-auth" : [ ]
+        } ]
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "webida-simple-auth" : {
+      "type" : "apiKey",
+      "name" : "Authorization",
+      "in" : "header",
+      "x-authorize" : "webida-simple-auth.js"
+    }
+  },
+  "definitions" : {
+    "RestOK" : {
+      "type" : "object",
+      "properties" : {
+        "message" : {
+          "type" : "string"
+        }
+      }
+    },
+    "RestError" : {
+      "type" : "object",
+      "required" : [ "message" ],
+      "properties" : {
+        "code" : {
+          "type" : "string"
+        },
+        "message" : {
+          "type" : "string"
+        }
+      },
+      "description" : "Error object with code and message. code is bound to status code, but not always same to\nstandard HTTP status text. For example, some 409 error may have code \"Invalid Argument\"\ninstead of \"Conflic\". So, Client should read message property to know what happend exactly\nwhen an error is returned from server. And, some 500 errors can have system errno instead\nof useless \"internal\". Like other errors, details are hidden in message.\n"
+    },
+    "Token" : {
+      "type" : "object",
+      "required" : [ "expiresAt", "issuedAt", "text", "tokenType" ],
+      "properties" : {
+        "text" : {
+          "type" : "string",
+          "description" : "actual token text that should be shipped in header or query"
+        },
+        "tokenType" : {
+          "type" : "string",
+          "description" : "MASTER : used to create an access token from clients, without login credential\nACCESS : protects api access. should be unique for each ide session\n\nNote that here\"s no REFRESH token, nor LOGIN token. The login api will create\nunrestricted access token & master token pair. Desktop app has a side-way to\ncreate an unrestricted master token before starting IDE instances.\n",
+          "enum" : [ "MASTER", "ACCESS" ]
+        },
+        "expiresAt" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "issuedAt" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "sessionId" : {
+          "type" : "string",
+          "description" : "mandatory for ACCESS token, identifying client instance"
+        },
+        "workspaceId" : {
+          "type" : "string",
+          "description" : "If truthy, access rights are restricted to specified workspace only."
+        }
+      },
+      "description" : "a json webtoken and accessible data"
+    },
+    "Credential" : {
+      "type" : "object",
+      "required" : [ "loginId", "loginPassword" ],
+      "properties" : {
+        "loginId" : {
+          "type" : "string"
+        },
+        "loginPassword" : {
+          "type" : "string"
+        },
+        "masterToken" : {
+          "type" : "string",
+          "description" : "a master token is issued when user wants to access webida api without id/password\nfrom remote or local desktop app. When masterToken is set, client should put some\nbogus id/password, non-empty. (The values can be used to identify client type)\n"
+        }
+      },
+      "description" : "user credential to login. Use https to protect credential."
+    },
+    "User" : {
+      "type" : "object",
+      "properties" : {
+        "id" : {
+          "type" : "string",
+          "description" : "unique id per user (email is also unique)"
+        },
+        "email" : {
+          "type" : "string"
+        },
+        "name" : {
+          "type" : "string"
+        }
+      },
+      "description" : "Any services/products should define some admin apis to manage users in the system and\nexpose what should be exposed to client app. So, no properties are mandatory.\nCurrently, properties are defined for compatiblity with legacy clients.\n"
+    },
+    "Stats" : {
+      "type" : "object",
+      "required" : [ "birthtime", "mode", "mtime", "nlink", "size", "type" ],
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "description" : "All types except 'DUMMY' come from fs.Stats is*** methods results. (e.g. if isFile()\nis true, then type will be 'FILE') If type is not decidable by the methods, default type\nis 'FILE', for everything on the file system is basically a file. 'DUMMY' type means\nthat some object 'does not exist for now'. Client may use 'DUMMY' type to mark something\ndangling, not written or created on real file system yet but visible to user.\n",
+          "enum" : [ "FILE", "DIRECTORY", "BLOCK_DEVICE", "CHARACTER_DEVICE", "LINK", "FIFO", "SOCKET", "DUMMY" ]
+        },
+        "birthtime" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "mtime" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "mode" : {
+          "type" : "string"
+        },
+        "size" : {
+          "type" : "integer"
+        },
+        "nlink" : {
+          "type" : "integer"
+        }
+      },
+      "description" : "simplified/augmented fs.Stats class - see node.js doc for all properties"
+    },
+    "DirEntry" : {
+      "type" : "object",
+      "required" : [ "children", "name", "stats" ],
+      "properties" : {
+        "name" : {
+          "type" : "string"
+        },
+        "stats" : {
+          "$ref" : "#/definitions/Stats"
+        },
+        "children" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/DirEntry"
+          }
+        }
+      },
+      "description" : "a directory entry (file or directory) with children that represents a (sub) tree"
+    },
+    "Match" : {
+      "type" : "object",
+      "required" : [ "line", "text" ],
+      "properties" : {
+        "line" : {
+          "type" : "integer"
+        },
+        "text" : {
+          "type" : "string"
+        }
+      },
+      "description" : "search result for a file"
+    },
+    "Workspace" : {
+      "type" : "object",
+      "required" : [ "accessedAt", "createdAt", "description", "id", "name" ],
+      "properties" : {
+        "id" : {
+          "type" : "string",
+          "description" : "the id of a workspace. usually same to file system id"
+        },
+        "name" : {
+          "type" : "string",
+          "description" : "display text of this workspace for UI"
+        },
+        "description" : {
+          "type" : "string",
+          "description" : "human readable description on this workspace"
+        },
+        "createdAt" : {
+          "type" : "string",
+          "format" : "date-time",
+          "description" : "the time when this workspace is created (registered from local file system)"
+        },
+        "accessedAt" : {
+          "type" : "string",
+          "format" : "date-time",
+          "description" : "the time when the last session on this workspace was made"
+        },
+        "workspacePath" : {
+          "type" : "string",
+          "description" : "absolute path of this workspace in server. (not always available)"
+        }
+      },
+      "description" : "A workspace in server"
+    },
+    "RemoteAccess" : {
+      "type" : "object",
+      "required" : [ "masterToken", "name", "serverUrl", "workspaceId" ],
+      "properties" : {
+        "name" : {
+          "type" : "string",
+          "description" : "display text of remote workspace. can be different from original name.\n"
+        },
+        "serverUrl" : {
+          "type" : "string",
+          "description" : "the url of remote server. Should have no path/query parameters, even \"/\" in path.\n"
+        },
+        "workspaceId" : {
+          "type" : "string",
+          "description" : "the id of remote workspace, read from remote server"
+        },
+        "workspacePath" : {
+          "type" : "string",
+          "description" : "Full path of remote workspace, read from remote server. this property will be removed\nwhen clients are able to work without \"named root directory\" in workspace fs tree.\n"
+        },
+        "masterToken" : {
+          "type" : "string",
+          "description" : "master token to access service, issued from remote server"
+        }
+      },
+      "description" : "Access information of remote workspace in remote server"
+    },
+    "Session" : {
+      "type" : "object",
+      "required" : [ "clientAddress", "connectedAt", "disconnectedAt", "id", "name", "state" ],
+      "properties" : {
+        "id" : {
+          "type" : "string",
+          "description" : "the id of a session. usually same to socket id."
+        },
+        "name" : {
+          "type" : "string",
+          "description" : "human readable name, usually derived from workspace name."
+        },
+        "state" : {
+          "type" : "string",
+          "description" : "state of this session\nNORMAL = connected, normally working\nLOSING = disconnected, waiting reconnection. still accessible with api\nCLOSING = socket connection will close connection by server (clinet will be notified)\n\nthere\"s no \"CLOSED\" / \"LOST\" state, for server will remove session object in registry\nwhen the server closes connection or stops waiting for reconnection for timeout.\n",
+          "enum" : [ "NORMAL", "LOSING", "CLOSING" ]
+        },
+        "workspaceId" : {
+          "type" : "string",
+          "description" : "the id of workspace that this sessions is working on."
+        },
+        "clientAddress" : {
+          "type" : "string",
+          "description" : "the peer address of session connection. not always"
+        },
+        "connectedAt" : {
+          "type" : "string",
+          "format" : "date-time",
+          "description" : "the time when socket connection is established"
+        },
+        "disconnectedAt" : {
+          "type" : "string",
+          "format" : "date-time",
+          "description" : "the time when socket is closed."
+        },
+        "willCloseAt" : {
+          "type" : "string",
+          "format" : "date-time",
+          "description" : "when state becomes CLOSING, actual closing time will be updated by server."
+        },
+        "willLoseAt" : {
+          "type" : "string",
+          "format" : "date-time",
+          "description" : "when state becomes LOSING, server will not wait for reconnection after this time."
+        }
+      },
+      "description" : "an application session per ide instance. bound to access token"
+    },
+    "Execution" : {
+      "type" : "object",
+      "required" : [ "args", "command" ],
+      "properties" : {
+        "id" : {
+          "type" : "string",
+          "description" : "unique identifier of execution, to demux response stream or cancel request.\nasync exec request should have id, always. For synchronous execution, missing\nid will be generated by server with random string & timestamp.\n"
+        },
+        "command" : {
+          "type" : "string",
+          "description" : "command to run. should not contain any arguments, pipes, redirections\n"
+        },
+        "args" : {
+          "type" : "array",
+          "description" : "the arguments array",
+          "items" : {
+            "type" : "string"
+          }
+        },
+        "cwd" : {
+          "type" : "string",
+          "description" : "Current working directory of spawned process, relative to workspace root. If abscent,\ncwd will be the workspace root directory. Does not accept any evaluatable form like\n$HOME, %USERPROFILE%. As wfs operations, path should be unixified. But, unlikely,\nwhile the wfs operations cut heading \"/\" in path with URI normlization, this operation\ndoes not convert path to relateive and returns error for the argument.\n"
+        },
+        "input" : {
+          "type" : "string",
+          "description" : "input string for child process. if falsy, no input will be available to child.\n(interactive execution via websocket is not supported for most of such processes\n requires tty, not standard i/o)\n"
+        },
+        "timeout" : {
+          "type" : "integer",
+          "description" : "The value which In \"milliseconds\" the maximum amount of time the child is allowed\nto run. (not idle time of stdout / stderr stream) if undefined, server sets default\ntimeout value 5 min to synchronous execution requests. If request specifies async\nexecution and sets this value to falsy, server should not kill the child process until\n  1) The process exists by self\n  2) cancel operation is invoked by api request\n  3) The workspace executing the process is removed by api request\n  4) Server Stops\nTerminiating any \"too-long-lived\" child process are not graceful, as cancel() is.\n"
+        }
+      },
+      "description" : "execution request, simlilar to node.js spawn(). see node.js documentation for\ndetails of each properties. some properties are not configurable for portability\n   - encoding : fixed to utf-8\n   - shell : fixed to system default. Using shell variables in command may not work.\n   - killSignal : fixed to SIGTERM. If process does not die, server can send SIGKILL or\n                  invoke taskkill to ensure chlid process is killed.\n   - uid & gid : will not be set for security\n   - stdio : all streams are handled by server. no options are avaliable to client.\n   - shell : always false.\n   - detached : always false\n"
+    },
+    "ExecutionResult" : {
+      "type" : "object",
+      "required" : [ "exitCode", "stderr", "stdout" ],
+      "properties" : {
+        "exitCode" : {
+          "type" : "integer",
+          "description" : "exit code of child process."
+        },
+        "stdout" : {
+          "type" : "string",
+          "description" : "standard out of child process."
+        },
+        "stderr" : {
+          "type" : "string",
+          "description" : "standard error of child process."
+        }
+      },
+      "description" : "execution response"
+    },
+    "ChildProcess" : {
+      "type" : "object",
+      "required" : [ "args", "command", "executionId", "pid", "startedAt", "sync" ],
+      "properties" : {
+        "pid" : {
+          "type" : "integer",
+          "description" : "child process pid"
+        },
+        "command" : {
+          "type" : "string",
+          "description" : "the execution command in Execution request"
+        },
+        "args" : {
+          "type" : "array",
+          "description" : "arguments of the command in Execution request",
+          "items" : {
+            "type" : "string"
+          }
+        },
+        "executionId" : {
+          "type" : "string",
+          "description" : "execution id from Execution request"
+        },
+        "startedAt" : {
+          "type" : "string",
+          "format" : "date-time",
+          "description" : "the time when this process is spawned"
+        },
+        "sync" : {
+          "type" : "array",
+          "description" : "true when this process is spawned by synchronous exec request",
+          "items" : {
+            "type" : "string"
+          }
+        }
+      },
+      "description" : "a process in execution"
+    }
+  },
+  "parameters" : {
+    "wfsId" : {
+      "name" : "wfsId",
+      "in" : "path",
+      "description" : "webida file system id (same to workspace id) to access.",
+      "required" : true,
+      "type" : "string"
+    },
+    "wfsPath" : {
+      "name" : "wfsPath",
+      "in" : "path",
+      "description" : "webida file system path to access. without heading /. should be placed at the end of path arguments\n",
+      "required" : true,
+      "type" : "string",
+      "pattern" : ".*"
+    },
+    "srcPath" : {
+      "name" : "srcPath",
+      "in" : "query",
+      "description" : "source data path of some operations, with have heading /",
+      "required" : true,
+      "type" : "string"
+    },
+    "wfsPathList" : {
+      "name" : "wfsPathList",
+      "in" : "query",
+      "description" : "array of wfsPath, with heading /  (collection format may be changed by implementation)",
+      "required" : true,
+      "type" : "array",
+      "items" : {
+        "type" : "string"
+      },
+      "collectionFormat" : "multi"
+    },
+    "ensure" : {
+      "name" : "ensure",
+      "in" : "query",
+      "description" : "flag to create all parent directories to create file or dir, like mkdir -p",
+      "required" : false,
+      "type" : "boolean",
+      "default" : false
+    },
+    "recursive" : {
+      "name" : "recursive",
+      "in" : "query",
+      "description" : "flag to set copy with",
+      "required" : false,
+      "type" : "boolean",
+      "default" : false
+    },
+    "removeExisting" : {
+      "name" : "removeExisting",
+      "in" : "query",
+      "description" : "remove any existing file/dir before writing.",
+      "required" : false,
+      "type" : "boolean",
+      "default" : false
+    },
+    "pattern" : {
+      "name" : "pattern",
+      "in" : "query",
+      "description" : "regex pattern to match",
+      "required" : true,
+      "type" : "string"
+    },
+    "ignoreCase" : {
+      "name" : "ignoreCase",
+      "in" : "query",
+      "description" : "regex matching option to ignore case",
+      "required" : false,
+      "type" : "boolean",
+      "default" : false
+    },
+    "wholeWord" : {
+      "name" : "wholeWord",
+      "in" : "query",
+      "description" : "regex matching option to match whole word",
+      "required" : false,
+      "type" : "boolean",
+      "default" : false
+    },
+    "workspaceId" : {
+      "name" : "workspaceId",
+      "in" : "path",
+      "description" : "webida workspace id (usually same to file system id, wfsId)",
+      "required" : true,
+      "type" : "string"
+    },
+    "objectPath" : {
+      "name" : "objectPath",
+      "in" : "path",
+      "description" : "the path (filename without .json) of metadata, without heading /",
+      "required" : true,
+      "type" : "string"
+    },
+    "sessionId" : {
+      "name" : "sessionId",
+      "in" : "path",
+      "description" : "webida session id (usually different from socket id from sock.io)",
+      "required" : true,
+      "type" : "string"
+    }
+  }
+}

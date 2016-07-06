@@ -1,0 +1,1456 @@
+#
+# Webida Service Api specifiaion
+#
+
+# Current api desingn rules
+#  1) Any (and only) "reusable" schemas should be placed in #/parameters, #/definitions
+#  2) Do not use multiple tags in a single operaion to reduce client code size
+#  3) All "real-path" parameters (can contain /) should be "relative".
+#     An operation can have 0 or 1 real-path parameters, at the end of path params.
+#  4) Prefer /some-name-plural/{id} form (except wfs) and don"t mix with sigular noun
+#  5) All response should be an object or file. No Plain Text!
+#  6) Keep common/starndard http status code semantic, as possible as we can.
+#  7) Do not split this document into pieces, for none of standard swagger tools supoorts
+#     multi-docs spec yet.
+#  8) Do not use "polymorphism" with discriminator property. swagger-codegen for JS does
+#     not support such polymorphism yet.
+
+# notes for swaggerize-routes
+#  - 1 x-handler impl module for every operation. file name should be same to operation id.
+
+swagger: "2.0"
+
+info:
+  version: "0.2.0"
+  title: Webida Restful API
+  description: Minimal, Basic Webida Restful API definitions
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+
+# Should not include host / schemes in this spec, for server/client implementation
+#  wants to override the values always, anyway.
+
+basePath: /api
+
+produces:
+  - application/json
+  - application/octet-stream
+
+consumes:
+  - application/json
+
+paths:
+
+  /auth/login:
+    post:
+      x-handler: handlers/auth/login.js
+      tags: ["auth"]
+      description: |
+        A "VERY" basic authentication, required to use webida-simple-auth security scheme.
+
+        Service / Product implementations who need better security, should override this operation
+        or add their own login api or some other specs like OAuth2. Simple auth is not suitable
+        for large-sacle, multi-tennant service, for the scheme assumes a single, trusted user only.
+
+        Logging-in with master token, the generated access token inherits all restriction from it.
+        On the other hand, normal log-in with login id & password creates an unrestricted access
+        token, with reasonably short expiration time.
+
+        Every client should spawn another access token with issueToken API before current
+        access token expires, inheriting session id from current token. To save remote access
+        info, client should create a (restricted but long-ttl) master token to start IDE from
+        remote. The remote client should not use the unrestricted acccess token from login
+        to use any other perpose than finding available workspaces, and should not refresh
+        the token. (Let user log-in again)
+
+      operationId: login
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/Credential"
+      responses:
+        "200":
+          description: login success
+          schema:
+            $ref: "#/definitions/Token"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+  /auth/info:
+    get:
+      x-handler: handlers/auth/info.js
+      tags: ["auth"]
+      description: |
+        Gets user information of that can be identified with current access token. Implementations
+        should provide a more restful api based on domain data model. Don"t override this operation
+        for multi-user system.
+      operationId: getInfo
+      security:
+        - webida-simple-auth: []
+      responses:
+        "200":
+          description: user information
+          schema:
+            $ref: "#/definitions/User"
+        "401":
+          description: auth failed
+          schema:
+            $ref: "#/definitions/RestError"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+  /auth/token:
+    post:
+      x-handler: handlers/auth/token.js
+      tags: ["auth"]
+      description: |
+        Creates new token from current access token, inheriting workspace id & session id
+        Duration of generated token is (and should not be) parameterizable. Server should
+        set proper time, respecting "reconnect" period of web socket clients. Most of the
+        socket implementations (including socket.io) do not provide any ways to change
+        connection parameters (header or query) while reconnecting to server.
+      operationId: issueToken
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - name: type
+          in: query
+          required: true
+          type: string
+          enum: ["MASTER", "ACCESS"]
+        - name: workspaceId
+          in: query
+          required: false
+          type: string
+          description: recommended to issue a MASTER type token to restrict remote access
+      responses:
+        "200":
+          description: new token generated
+          schema:
+            $ref: "#/definitions/Token"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+  #
+  # wfs paths starts with /wfs/{wfsId}
+  #  /file/{wfsPath} file CRUD C,U is PUT, not POST
+  #    GET - read file
+  #    PUT - write file
+  #    POST?{src} - rename to (supports dir too)
+  #  /dir/{wfsPath} directory CRUD
+  #    GET - list (read) dir
+  #    PUT - create (can  be expanded to import, later)
+  #    POST?{src} - move to dir (supports file too)
+  #  /any/{wfsPath}
+  #    GET?{ignoreError} - stat / exists
+  #    PUT?{src} - copy
+  #    DELETE - delete
+  #  /ops/search/{wfsPath} for search (GET) and replace (POST)
+  #  /ops/replace?{wfsPath} for search (GET) and replace (POST)
+  #
+  #  We can"t use /wfs/{wfsId}/{wfsPath} form because swagger does not support "one-of"
+  #    in json schema nor path spec with query parameter. For example, a GET request,
+  #    having 3 semantics - stat/list/read.
+  #  So, reading from /{wfsId}/{wfsPath} requires 3 endpoint paths.
+  #
+
+  /wfs/{wfsId}/file/{wfsPath}:
+    # readFile.
+    get:
+      x-handler: handlers/wfs/readFile.js
+      tags: ["wfs"]
+      description: read file data on path
+      operationId: readFile
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/wfsId"
+        - $ref: "#/parameters/wfsPath"
+      responses:
+        "200":
+          description: |
+            File contents. Content-Type is application/octet-stream or follows file name extension.
+          schema:
+            type: file
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    # writeFile
+    put:
+      x-handler: handlers/wfs/writeFile.js
+      tags: ["wfs"]
+      description: Creates / updates file with body data
+      operationId: writeFile
+      consumes:
+        - multipart/form-data
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/wfsId"
+        - $ref: "#/parameters/wfsPath"
+        - $ref: "#/parameters/ensure"
+        - name: data
+          in: formData
+          required: true
+          description: file contents to write.
+          type: file
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/RestOK"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    # rename
+    post:
+      x-handler: handlers/wfs/rename.js
+      tags: ["wfs"]
+      description: Rename a file or directory to. This api does not overwrite existing one. 
+      operationId: rename
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/wfsId"
+        - $ref: "#/parameters/wfsPath"
+        - $ref: "#/parameters/srcPath"
+        - $ref: "#/parameters/ensure"
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/RestOK"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+
+  /wfs/{wfsId}/dir/{wfsPath}:
+    # dirTree
+    get:
+      x-handler: handlers/wfs/dirTree.js
+      tags: ["wfs"]
+      description: |
+        returns a directory tree of given path, for listing dir and managing file system
+        errors while building sub-tree will be ignored and will not be included in result.
+      operationId: dirTree
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/wfsId"
+        - $ref: "#/parameters/wfsPath"
+        - name: maxDepth
+          description: Maximum depth of tree. -1 to build a full tree, 0 to stat, 1 to plain list.
+          in: query
+          type: integer
+          required: true
+      responses:
+        "200":
+          description: A DirEntry, root of the tree, for given path and depth.
+          schema:
+            $ref: "#/definitions/DirEntry"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    # createDir
+    put:
+      x-handler: handlers/wfs/createDir.js
+      tags: ["wfs"]
+      description: |
+        create a directory at the path. returns error when wfsPath exists and not empty
+        this API always creates parent directories if needed.
+      operationId: createDir
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/wfsId"
+        - $ref: "#/parameters/wfsPath"
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/RestOK"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    # move
+    post:
+      x-handler: handlers/wfs/move.js
+      tags: ["wfs"]
+      description: move file or directory to given path. works like mv -r command
+      operationId: move
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/wfsId"
+        - $ref: "#/parameters/wfsPath"
+        - $ref: "#/parameters/srcPath"
+        - $ref: "#/parameters/removeExisting"
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/RestOK"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+
+  /wfs/{wfsId}/any/{wfsPath}:
+    # stat
+    get:
+      x-handler: handlers/wfs/stat.js
+      tags: ["wfs"]
+      description: |
+        Get stats of given path. (stat() returns "stats" object in node and POSIX system)
+        Since we've no ctime/atime in Stats class, some file system changing events will
+        send 'exactly same' stats object. This API should be called only when stats of some
+        file system path is stale for unknown reason (e.g. losting change events).
+        Use dirTree operation and session events to detect stats, if possible. This API
+        can be used to check a path is valid, existing one, but it's not recommended to
+        check existence of individual paths by API. Clients should use dirTree and session
+        events to synchorize some in-app file system with webida file system.
+
+      operationId: stat
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/wfsId"
+        - $ref: "#/parameters/wfsPath"
+        - name: ignoreError
+          in: query
+          required: false
+          description: |
+            flag to ignore stat errors to check existence only. If this flag is true,
+            server will returns 'DUMMY' type stats object instead of 404 error when
+            given path does not exists. (invalid wfsId will produce 400 error, not 404)
+          type: boolean
+          default: false
+      responses:
+        "200":
+          description: stats object.
+          schema:
+            $ref: "#/definitions/Stats"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    # copy
+    put:
+      x-handler: handlers/wfs/copy.js
+      tags: ["wfs"]
+      description: |
+        Copy to given path. Works like cp -r command, with some funny options.
+        Copying a dir on to existing file will return error if removeExisting is false.
+        If removeExisting is true, destination path will be 'clobbed' before copying file.
+        So, delete event will be delivered first, before creating new dir/files.
+        And, plz, Do not use this operation to duplicate socket/fifo/devices.
+      operationId: copy
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/wfsId"
+        - $ref: "#/parameters/wfsPath"
+        - $ref: "#/parameters/srcPath"
+        - $ref: "#/parameters/removeExisting"
+        - name: followSymbolicLinks
+          in: query
+          description: dereference symlinks or not
+          required: false
+          type: boolean
+          default: false
+        - name: noPreserveTimestamps
+          in: query
+          description: to change default behavior, keep mtime/atime of source files in destination
+          required: false
+          type: boolean
+          default: false
+        - name: filterPattern
+          in: query
+          description: execute copy if source matches to this regex pattern.
+          required: false
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/RestOK"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+
+    # remove / delete
+    delete:
+      x-handler: handlers/wfs/remove.js
+      tags: ["wfs"]
+      description: delete file or directory
+      operationId: remove
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/wfsId"
+        - $ref: "#/parameters/wfsPath"
+        - $ref: "#/parameters/recursive"
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/RestOK"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+
+  # search
+  /wfs/{wfsId}/ops/search/{wfsPath}:
+    get:
+      x-handler: handlers/wfs/search.js
+      tags: ["ops"]
+      description: search files in some path, with given pattern
+      operationId: search
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/wfsId"
+        - $ref: "#/parameters/wfsPath"
+        - $ref: "#/parameters/pattern"
+        - $ref: "#/parameters/ignoreCase"
+        - $ref: "#/parameters/wholeWord"
+      responses:
+        "200":
+          description: stats list (define SearchResult first)
+          schema:
+            type: object
+            additionalProperties:
+              $ref: "#/definitions/Match"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+  # replace
+  /wfs/{wfsId}/ops/replace:
+    post:
+      x-handler: handlers/wfs/replace.js
+      tags: ["ops"]
+      description: replace file contents with regex matching
+      operationId: replace
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/wfsId"
+        - $ref: "#/parameters/wfsPathList"
+        - $ref: "#/parameters/pattern"
+        - name: replaceTo
+          in: query
+          description: string to replace with
+          type: string
+          required: true
+        - $ref: "#/parameters/ignoreCase"
+        - $ref: "#/parameters/wholeWord"
+      responses:
+        "200":
+          description: done
+          schema:
+            $ref: "#/definitions/RestOK"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+  # (local) workspace related apis
+  #  workspaces/
+  #   GET : get all local workspaces
+  #   POST : create single local workspace
+  #  workspaces/{workspaceId} - individual local workspaces
+  #   GET : get single workspace object
+  #   PUT : update single workspace
+  #   DELETE : delete single workspace
+  #  workspaces/{workspaceId}/exec
+
+  /workspaces:
+    # findWorkspaces
+    get:
+      x-handler: handlers/workspace/findWorkspaces.js
+      tags: ["workspace"]
+      description: | 
+        Finds workspaces (no find/search parameters yet). Requires an unrestricted access token.  
+      operationId: findWorkspaces
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - name: disposable
+          in: query
+          required: false
+          description: include disposable workspaces or not
+          type: boolean
+          default: false
+      responses:
+        "200":
+          description: array of local workspaces
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Workspace"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    # createWorkspace
+    post:
+      x-handler: handlers/workspace/createWorkspace.js
+      tags: ["workspace"]
+      description: | 
+        Creates a new workspace with given local path. Requires an unrestricted access token. 
+      operationId: createWorkspace
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - name: localPath
+          in: query
+          required: true
+          description: a real, local path of the system (not unixified)
+          type: string
+        - name: name
+          in: query
+          required: true
+          description: workspace name property
+          type: string
+        - name: description
+          in: query
+          required: true
+          description: workspace name property
+          type: string
+      responses:
+        "200":
+          description: newly created local workspace
+          schema:
+            $ref: "#/definitions/Workspace"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+  /workspaces/{workspaceId}:
+    # getWorkspace
+    get:
+      x-handler: handlers/workspace/getWorkspace.js
+      tags: ["workspace"]
+      description: get a workspace object by id
+      operationId: getWorkspace
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/workspaceId"
+      responses:
+        "200":
+          description: the workspace
+          schema:
+            $ref: "#/definitions/Workspace"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    # update workspace
+    put:
+      x-handler: handlers/workspace/updateWorkspace.js
+      tags: ["workspace"]
+      description: | 
+        Updates workspace. Some protected properties will not be changed by this api. Requires 
+        proper access rights in access token. 
+      operationId: updateWorkspace
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/workspaceId"
+      responses:
+        "200":
+          description: updated Workspace object
+          schema:
+            $ref: "#/definitions/Workspace"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    # delete workspace
+    delete:
+      x-handler: handlers/workspace/removeWorkspace.js
+      tags: ["workspace"]
+      description: |
+        This operation will remove the requested workspace when
+          1) all sessions are closed for request (will be notified by server)
+          2) excedded time limit value in closeAfter parameter
+          3) server goes down after accepting remove request
+        "willBeRemovedAt" property can be set "only" by this api.
+        This API requires "unrestricted" access token. Even an access token has matching
+        workspace id, removing an workspace is rejected.
+      operationId: removeWorkspace
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/workspaceId"
+        - name: closeAfter
+          in: query
+          description: Time in seconds to wait for all sessions save & close their data.
+          type: integer
+          required: false
+          default: 0
+      responses:
+        "200":
+          description: removed Workspace object
+          schema:
+            $ref: "#/definitions/Workspace"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+  /workspaces/{workspaceId}/exec:
+
+    #getChildProcs
+    get:
+      x-handler: handlers/workspace/getChildProcs.js
+      tags: ["workspace"]
+      description: |
+       get all spawned process info, created by exec api, on given workspace. set workspace id to
+       "*" to all processes info. This operation requires proper access rights (unrestricted or
+       matching workspace id in access token with parameter)
+      operationId: getChildProcs
+      parameters:
+        - $ref: "#/parameters/workspaceId"
+        - name: includeExec
+          in: query
+          description: include processes created by synchronous exec request
+          type: boolean
+          required: false
+          default: false
+      responses:
+        "200":
+          description: execution result with all captured standard ouput and error
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/ChildProcess"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    #exec
+    post:
+      x-handler: handlers/workspace/exec.js
+      tags: ["workspace"]
+      description: execute a shell command on this workspace
+      operationId: exec
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/workspaceId"
+        - name: async
+          in: query
+          description: |
+            Spawn a child process for given command and returns a child process info only. ,
+            Actual output (stream of message) will be delivered to web socket channel, with
+            room id /sessions/asyn-{Execution#id}
+          type: boolean
+          required: false
+          default: false
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/Execution"
+      responses:
+        "200":
+          description: execution result with all captured standard ouput and error
+          schema:
+            $ref: "#/definitions/ExecutionResult"
+        "201":
+          description: spawned process infomation created by async execution
+          schema:
+            $ref: "#/definitions/ChildProcess"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    #cancel
+    delete:
+      tags: ["workspace"]
+      description: cancels an execution, if possible. Killing process may not be graceful.
+      operationId: cancel
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/workspaceId"
+        - name: execId
+          in: query
+          description: the id of execution (different from pid!)
+          type: string
+          required: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/RestOK"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+  /workspaces/{workspaceId}/metadata/{objectPath}:
+    #readMetadata
+    get:
+      x-handler: handlers/workspace/readMetadata.js
+      tags: ["workspace"]
+      description: read a metadata file from a workspace.
+      operationId: readMetadata
+      parameters:
+        - $ref: "#/parameters/workspaceId"
+        - $ref: "#/parameters/objectPath"
+      responses:
+        "200":
+          description: the metadata file contents at given path
+          schema:
+            type: file
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    #putMetadata
+    put:
+      x-handler: handlers/workspace/writeMetadata.js
+      tags: ["workspace"]
+      description: write a metadata file at given path. missing parents will be created.
+      operationId: writeMetadata
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/workspaceId"
+        - $ref: "#/parameters/objectPath"
+        - name: data
+          in: formData
+          required: true
+          description: file contents to write.
+          type: file
+      responses:
+        "200":
+          description: OK. saved.
+          schema:
+            $ref: "#/definitions/RestOK"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    #removeMetadata
+    delete:
+      tags: ["workspace"]
+      description: delete metadata of given path
+      operationId: removeMetadata
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/workspaceId"
+        - $ref: "#/parameters/objectPath"
+      responses:
+        "200":
+          description: OK. removed
+          schema:
+            $ref: "#/definitions/RestOK"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+  #
+  # remote-access
+  #   GET : get all remote workspaces" access info, registered to local server
+  #   PUT : put (upsert) a remote workspace access info
+  #   DELETE : delete single remote workspace" access info
+  #
+  /remotes:
+    # findRemoteAccess
+    get:
+      x-handler: handlers/remotes/findRemoteAccesses.js
+      tags: ["remotes"]
+      description: |
+        Get all access informations See RemoteWorkspaceAccess definition for details (no fancy
+        find / search feature yet)
+      operationId: findRemoteAccesses
+      security:
+        - webida-simple-auth: []
+      responses:
+        "200":
+          description: array of remote workspaces
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/RemoteAccess"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    # putRemoteAccess
+    put:
+      tags: ["remotes"]
+      description: create or update a remote workspace access information
+      operationId: putRemoteAccess
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/RemoteAccess"
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/RestOK"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    # removeRemoteWorkspace
+    delete:
+      tags: ["remotes"]
+      description: delete a remote workspace
+      operationId: removeRemoteAccess
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - name: workspaceId
+          in: query
+          required: true
+          description: workspace Id of remote workspace
+          type: string
+      responses:
+        "200":
+          description: removed remote workspace access info
+          schema:
+            $ref: "#/definitions/RemoteAccess"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+  # metadata save/load APIs are coming soon...
+
+  /sessions:
+    get:
+      x-handler: handlers/session/findSessions.js
+      tags: ["session"]
+      description: get all / some webida sessions established to server
+      operationId: findSessions
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - name: workspaceId
+          in: query
+          required: false
+          description: find only sessions working on some given workspace
+          type: string
+      responses:
+        "200":
+          description: array of sessions
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Session"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    # We dont define method POST here, for all sessions are made from web socket connections.
+    # And, we should separate ws connection end-point from API, for some servers will
+    # not host web socket in api implementation
+
+  /sessions/{sessionId}:
+    get:
+      x-handler: handlers/session/getSession.js
+      tags: ["session"]
+      description: get a session object by id
+      operationId: getSession
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/sessionId"
+      responses:
+        "200":
+          description: session
+          schema:
+            $ref: "#/definitions/Session"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    delete:
+      x-handler: handlers/session/closeSession.js
+      tags: ["session"]
+      description: close session with timeout
+      operationId: closeSession
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/sessionId"
+        - name: closeAfter
+          in: query
+          type: integer
+          description: |
+            waiting time before actual closing, to let client save files and prevent reconnect
+          required: true
+      responses:
+        "200":
+          description: OK.
+          schema:
+            $ref: "#/definitions/RestOK"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+
+securityDefinitions:
+  webida-simple-auth:
+    type: apiKey
+    name: Authorization
+    in: header
+    x-authorize: webida-simple-auth.js
+
+parameters:
+  wfsId:
+    name: wfsId
+    in: path
+    description: webida file system id (same to workspace id) to access.
+    required: true
+    type: string
+
+  wfsPath:
+    name: wfsPath
+    in: path
+    description: |
+      webida file system path to access. without heading /. should be placed at the end of path arguments
+    required: true
+    type: string
+    pattern: .*
+
+  srcPath:
+    name: srcPath
+    in: query
+    description: source data path of some operations, with have heading /
+    required: true
+    type: string
+
+  wfsPathList:
+    name: wfsPathList
+    in: query
+    description: array of wfsPath, with heading /  (collection format may be changed by implementation)
+    required: true
+    type: array
+    items:
+      type: string
+    collectionFormat: multi
+
+  ensure:
+    name: ensure
+    in: query
+    required: false
+    description: flag to create all parent directories to create file or dir, like mkdir -p
+    type: boolean
+    default: false
+
+  recursive:
+    name: recursive
+    in: query
+    required: false
+    description: flag to set copy with
+    type: boolean
+    default: false
+
+  removeExisting:
+    name: removeExisting
+    in: query
+    description: remove any existing file/dir before writing.
+    required: false
+    type: boolean
+    default: false
+
+  pattern:
+    name: pattern
+    in: query
+    description: regex pattern to match
+    type: string
+    required: true
+
+  ignoreCase:
+    name: ignoreCase
+    in: query
+    description: regex matching option to ignore case
+    type: boolean
+    required: false
+    default: false
+
+  wholeWord:
+    name: wholeWord
+    in: query
+    description: regex matching option to match whole word
+    type: boolean
+    required: false
+    default: false
+
+  workspaceId:
+    name: workspaceId
+    in: path
+    description: webida workspace id (usually same to file system id, wfsId)
+    required: true
+    type: string
+
+  objectPath:
+    name: objectPath
+    in: path
+    description: the path (filename without .json) of metadata, without heading /
+    required: true
+    type: string
+
+  sessionId:
+    name: sessionId
+    in: path
+    description: webida session id (usually different from socket id from sock.io)
+    required: true
+    type: string
+
+
+definitions:
+
+  RestOK:
+    type: object
+    properties:
+      message:
+        type: string
+
+  RestError:
+    type: object
+    description: |
+      Error object with code and message. code is bound to status code, but not always same to
+      standard HTTP status text. For example, some 409 error may have code "Invalid Argument"
+      instead of "Conflic". So, Client should read message property to know what happend exactly
+      when an error is returned from server. And, some 500 errors can have system errno instead
+      of useless "internal". Like other errors, details are hidden in message.
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    required:
+      - message
+
+  Token:
+    type: object
+    description: a json webtoken and accessible data
+    properties:
+      text:
+        type: string
+        description: actual token text that should be shipped in header or query
+      tokenType:
+        type: string
+        enum: ["MASTER", "ACCESS"]
+        description: |
+          MASTER : used to create an access token from clients, without login credential
+          ACCESS : protects api access. should be unique for each ide session
+
+          Note that here"s no REFRESH token, nor LOGIN token. The login api will create
+          unrestricted access token & master token pair. Desktop app has a side-way to
+          create an unrestricted master token before starting IDE instances.
+      expiresAt:
+        type: string
+        format: date-time
+      issuedAt:
+        type: string
+        format: date-time
+      sessionId:
+        type: string
+        description: mandatory for ACCESS token, identifying client instance
+      workspaceId:
+        type: string
+        description: If truthy, access rights are restricted to specified workspace only.
+    required:
+      - text
+      - tokenType
+      - expiresAt
+      - issuedAt
+
+  Credential:
+    type: object
+    description: user credential to login. Use https to protect credential.
+    properties:
+      loginId:
+        type: string
+      loginPassword:
+        type: string
+      masterToken:
+        type: string
+        description: |
+          a master token is issued when user wants to access webida api without id/password
+          from remote or local desktop app. When masterToken is set, client should put some
+          bogus id/password, non-empty. (The values can be used to identify client type)
+    required:
+      - loginId
+      - loginPassword
+
+  User:
+    type: object
+    description: |
+        Any services/products should define some admin apis to manage users in the system and
+        expose what should be exposed to client app. So, no properties are mandatory.
+        Currently, properties are defined for compatiblity with legacy clients.
+    properties:
+      id:
+        type: string
+        description: unique id per user (email is also unique)
+      email:
+        type: string
+      name:
+        type: string
+
+  Stats:
+    type: object
+    description: simplified/augmented fs.Stats class - see node.js doc for all properties
+    required:
+      - type
+      - birthtime
+      - mtime
+      - mode
+      - size
+      - nlink
+    properties:
+      type:
+        type: string
+        enum:
+          - "FILE"
+          - "DIRECTORY"
+          - "BLOCK_DEVICE"
+          - "CHARACTER_DEVICE"
+          - "LINK"
+          - "FIFO"
+          - "SOCKET"
+          - "DUMMY"
+        description: |
+          All types except 'DUMMY' come from fs.Stats is*** methods results. (e.g. if isFile()
+          is true, then type will be 'FILE') If type is not decidable by the methods, default type
+          is 'FILE', for everything on the file system is basically a file. 'DUMMY' type means
+          that some object 'does not exist for now'. Client may use 'DUMMY' type to mark something
+          dangling, not written or created on real file system yet but visible to user.
+      birthtime:
+        type: string
+        format: date-time
+      mtime:
+        type: string
+        format: date-time
+      mode:
+        type: string
+      size:
+        type: integer
+      nlink:
+        type: integer
+
+  DirEntry:
+    type: object
+    description: a directory entry (file or directory) with children that represents a (sub) tree
+    required:
+      - name
+      - stats
+      - children
+    properties:
+      name:
+        type: string
+      stats:
+        $ref: "#/definitions/Stats"
+      children:
+        type: array
+        items:
+          $ref: "#/definitions/DirEntry"
+
+  Match:
+    type: object
+    description: search result for a file
+    required:
+      - line
+      - text
+    properties:
+      line:
+        type: integer
+      text:
+        type: string
+
+  Workspace:
+    type: object
+    description: A workspace in server
+    properties:
+      id:
+        description: the id of a workspace. usually same to file system id
+        type: string
+      name:
+        description: display text of this workspace for UI
+        type: string
+      description:
+        description: human readable description on this workspace
+        type: string
+      createdAt:
+        description: the time when this workspace is created (registered from local file system)
+        type: string
+        format: date-time
+      accessedAt:
+        description: the time when the last session on this workspace was made
+        type: string
+        format: date-time
+      workspacePath:
+        description: absolute path of this workspace in server. (not always available)
+        type: string
+    required:
+      - id
+      - name
+      - description
+      - createdAt
+      - accessedAt
+
+  RemoteAccess:
+    type: object
+    description: Access information of remote workspace in remote server
+    properties:
+      name:
+        description: |
+          display text of remote workspace. can be different from original name.
+        type: string
+      serverUrl:
+        description: |
+          the url of remote server. Should have no path/query parameters, even "/" in path.
+        type: string
+      workspaceId:
+        description: the id of remote workspace, read from remote server
+        type: string
+      workspacePath:
+        description: |
+          Full path of remote workspace, read from remote server. this property will be removed
+          when clients are able to work without "named root directory" in workspace fs tree.
+        type: string
+      masterToken:
+        description: master token to access service, issued from remote server
+        type: string
+    required:
+      - name
+      - serverUrl
+      - workspaceId
+      - masterToken
+
+  Session:
+    type: object
+    description: an application session per ide instance. bound to access token
+    properties:
+      id:
+        description: the id of a session. usually same to socket id.
+        type: string
+      name:
+        description: human readable name, usually derived from workspace name.
+        type: string
+      state:
+        description: |
+          state of this session
+          NORMAL = connected, normally working
+          LOSING = disconnected, waiting reconnection. still accessible with api
+          CLOSING = socket connection will close connection by server (clinet will be notified)
+
+          there"s no "CLOSED" / "LOST" state, for server will remove session object in registry
+          when the server closes connection or stops waiting for reconnection for timeout.
+        type: string
+        enum:
+          - NORMAL
+          - LOSING
+          - CLOSING
+      workspaceId:
+        description: the id of workspace that this sessions is working on.
+        type: string
+      clientAddress:
+        description: the peer address of session connection. not always
+        type: string
+      connectedAt:
+        description: the time when socket connection is established
+        type: string
+        format: date-time
+      disconnectedAt:
+        description: the time when socket is closed.
+        type: string
+        format: date-time
+      willCloseAt:
+        description: when state becomes CLOSING, actual closing time will be updated by server.
+        type: string
+        format: date-time
+      willLoseAt:
+        description: when state becomes LOSING, server will not wait for reconnection after this time.
+        type: string
+        format: date-time
+    required:
+      - id
+      - name
+      - state
+      - clientAddress
+      - connectedAt
+      - disconnectedAt
+
+  Execution:
+    type: object
+    description: |
+      execution request, simlilar to node.js spawn(). see node.js documentation for
+      details of each properties. some properties are not configurable for portability
+         - encoding : fixed to utf-8
+         - shell : fixed to system default. Using shell variables in command may not work.
+         - killSignal : fixed to SIGTERM. If process does not die, server can send SIGKILL or
+                        invoke taskkill to ensure chlid process is killed.
+         - uid & gid : will not be set for security
+         - stdio : all streams are handled by server. no options are avaliable to client.
+         - shell : always false.
+         - detached : always false
+    properties:
+      id:
+        description: |
+          unique identifier of execution, to demux response stream or cancel request.
+          async exec request should have id, always. For synchronous execution, missing
+          id will be generated by server with random string & timestamp.
+        type: string
+      command:
+        description: |
+          command to run. should not contain any arguments, pipes, redirections
+        type: string
+      args:
+        description: the arguments array
+        type: array
+        items:
+          type: string
+      cwd:
+        description: |
+          Current working directory of spawned process, relative to workspace root. If abscent,
+          cwd will be the workspace root directory. Does not accept any evaluatable form like
+          $HOME, %USERPROFILE%. As wfs operations, path should be unixified. But, unlikely,
+          while the wfs operations cut heading "/" in path with URI normlization, this operation
+          does not convert path to relateive and returns error for the argument.
+        type: string
+      input:
+        description: |
+          input string for child process. if falsy, no input will be available to child.
+          (interactive execution via websocket is not supported for most of such processes
+           requires tty, not standard i/o)
+        type: string
+      timeout:
+        description: |
+          The value which In "milliseconds" the maximum amount of time the child is allowed
+          to run. (not idle time of stdout / stderr stream) if undefined, server sets default
+          timeout value 5 min to synchronous execution requests. If request specifies async
+          execution and sets this value to falsy, server should not kill the child process until
+            1) The process exists by self
+            2) cancel operation is invoked by api request
+            3) The workspace executing the process is removed by api request
+            4) Server Stops
+          Terminiating any "too-long-lived" child process are not graceful, as cancel() is.
+        type: integer
+    required:
+      - command
+      - args
+
+  ExecutionResult:
+    type: object
+    description: execution response
+    properties:
+      exitCode:
+        description: exit code of child process.
+        type: integer
+      stdout:
+        description: standard out of child process.
+        type: string
+      stderr:
+        description: standard error of child process.
+        type: string
+    required:
+      - exitCode
+      - stdout
+      - stderr
+
+  ChildProcess:
+    type: object
+    description: a process in execution
+    properties:
+      pid:
+        description: child process pid
+        type: integer
+      command:
+        description: the execution command in Execution request
+        type: string
+      args:
+        description: arguments of the command in Execution request
+        type: array
+        items:
+          type: string
+      executionId:
+        description: execution id from Execution request
+        type: string
+      startedAt:
+        description: the time when this process is spawned
+        type: string
+        format: date-time
+      sync:
+        description: true when this process is spawned by synchronous exec request
+        type: array
+        items:
+          type: string
+    required:
+      - pid
+      - command
+      - args
+      - executionId
+      - startedAt
+      - sync
+
+  # BulkOperationResponse: (pending for next release, 1.1)
+  #   type: object
+  #   description: |
+  #     A map of errors from input list value when some of them failed. Ususally,
+  #     If  all of inputs succeeds, then the op. response will have status 200
+  #     If  any of inputs succeeds, then the op. response will have status 207
+  #     If none of inputs succeeds, then the op. response will have status 207, too.
+  #     This object does not contains any entries that is completed without error.
+  #     In other words, map contains only errors. When status code is 200, result map will be empty.
+  #     So, any "single" operation contained in bulk operatino should have 200 - RESTOK
+  #      for successful result. no other complex data types are allowed.
+  #   additionalProperties:
+  #     type: object
