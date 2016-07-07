@@ -23,7 +23,7 @@ swagger: "2.0"
 info:
   version: "0.2.0"
   title: Webida Restful API
-  description: Minimal, Basic Webida Restful API definitions
+  description: Restful API for Webida clients to use server's data & features
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html

@@ -1,6 +1,6 @@
 /**
  * Webida Restful API
- * Minimal, Basic Webida Restful API definitions
+ * Restful API for Webida clients to use server's data & features
  *
  * OpenAPI spec version: 0.2.0
  * 
@@ -34,7 +34,7 @@
   'use strict';
 
   /**
-   * Minimal_Basic_Webida_Restful_API_definitions.<br>
+   * Restful_API_for_Webida_clients_to_use_servers_data__features.<br>
    * The <code>index</code> module provides access to constructors for all the classes which comprise the public API.
    * <p>
    * An AMD (recommended!) or CommonJS application will generally do something equivalent to the following:

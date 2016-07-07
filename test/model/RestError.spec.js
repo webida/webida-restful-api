@@ -1,6 +1,6 @@
 /**
  * Webida Restful API
- * Minimal, Basic Webida Restful API definitions
+ * Restful API for Webida clients to use server's data & features
  *
  * OpenAPI spec version: 0.2.0
  * 

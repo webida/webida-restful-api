@@ -1,7 +1,7 @@
 {
   "swagger" : "2.0",
   "info" : {
-    "description" : "Minimal, Basic Webida Restful API definitions",
+    "description" : "Restful API for Webida clients to use server's data & features",
     "version" : "0.2.0",
     "title" : "Webida Restful API",
     "license" : {
