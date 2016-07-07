@@ -1,10 +1,5 @@
 # {{projectName}}
 
-{{moduleName}} - JavaScript client for {{projectName}}
-{{#appDescription}}
-{{{appDescription}}}
-{{/appDescription}}
-
 This SDK Contains automatically generated sources & documents with the [Swagger Codegen](https://github.com/swagger-api/swagger-codegen) project:
 
 - API version: {{appVersion}}
@@ -12,22 +7,7 @@ This SDK Contains automatically generated sources & documents with the [Swagger 
 - Build date: {{generatedDate}}
 - Build package: {{generatorClass}}
 
-## Installation
-
-### For [Node.js](https://nodejs.org/)
-
-```shell
-npm install {{{projectName}}} --save
-```
-
-### For Browser
-
-Just use api-bundle.js & map file into your code, directly. (We'll support bower soon)
-
-
 ## Getting Started
-
-Please follow the [installation](#installation) instruction and execute the following JS code:
 
 ```javascript
 var {{{moduleName}}} = require('{{{projectName}}}');
@@ -77,7 +57,9 @@ api.{{{operationId}}}({{#allParams}}{{#required}}{{{paramName}}}{{#vendorExtensi
 
 ## Documentation for API Endpoints
 
-The end point of Webida Restful API is not fixed in spec. So, generated basePath *{{basePath}}* should be changed to `${serverUrl}/api`
+The end point of Webida Restful API is not fixed in swagger spec file.
+So, generated basePath *{{basePath}}* should be changed to `${serverUrl}/api`
+
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
@@ -108,47 +90,4 @@ Class | Method | HTTP request | Description
 {{#scopes}}  - {{scope}}: {{description}}
 {{/scopes}}
 {{/isOAuth}}
-
-## Build for your own
-
-### Pre-requisites
-
-#### node.js
-
-Download & install [node.js](https://nodejs.org) first, if you don't have one yet.
-For Windows OS, we recommend to use [nvm-windows](https://github.com/coreybutler/nvm-windows) then official installer.
-
-#### swagger-codegen
-
-Download or build swagger-codegen-cli.jar from Swagger Codegen project.
-See [Swagger Codegen](https://github.com/swagger-api/swagger-codegen) project page for details.
-Then, copy swagger-codegen.cli to builder/ directory.
-
-#### webpack
-
-Just install webpack to global. (local installation is not mandatory yet)
-``` shell
-npm install -g webpack
-```
-
-#### bash
-
-For Windows, use bash from git-for-windows binary.
-
-### Editing swagger spec & templates
-
-Use any editor for swagger.yaml file. We recommend you to use swagger editor.
-Be sure that swagger.yaml is validated before building. If not, code generator
-will produce very weird errors, hard to find why & where.
-
-To change package / version name, edit builder/templates/package.mustache.
-
-### Building sources & docs
-
-build.sh will clear pre-generated sources & docs with prior swagger.yaml and regenerate them.
-``` shell
-cd builder
-./build.sh
-```
-
 {{/authMethods}}

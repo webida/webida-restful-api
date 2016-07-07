@@ -2,24 +2,27 @@
 
 API_DIR=.. 
 SPEC_DIR=../api-spec
-CODEGEN_TEMPLATE_DIR=./templates
+TEMPLATES_DIR=./templates
 
-# cleanup output dir before generating files 
-./clear.sh 
+# backup original README.md & clob files to be generated
+mv $API_DIR/README.md $API_DIR/README.md.tmp
+./clear.sh
 
 # generate json spec file 
 java -jar swagger-codegen-cli.jar generate \
     -i $SPEC_DIR/swagger.yaml -l swagger -o $SPEC_DIR
 
 # now generates javascript client 
-# usePromise option is disabled 
-# until webida-service-api replaces callbacks with promise. 
-
+# usePromise option is disabled, for client app's webida-service-api layer is not ready
+# project name should be train-cased -
+# project version is not differ
 java -jar swagger-codegen-cli.jar generate \
     -i $SPEC_DIR/swagger.yaml -l javascript \
-    -t $CODEGEN_TEMPLATE_DIR -o $API_DIR 
+    -t $TEMPLATES_DIR -o $API_DIR
 
-# build with webpack 
+# rename generated README.md & restore original, then build with webpack
 cd $API_DIR
+mv README.md README-API.md
+mv README.md.tmp README.md
 npm install
-webpack --progress -p 
+webpack --progress -p
