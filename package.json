@@ -1,7 +1,7 @@
 {
   "name": "webida-restful-api",
-  "version": "0.2.0",
-  "description": "Restful_API_for_Webida_clients_to_use_servers_data__features",
+  "version": "0.2.1",
+  "description": "Webida Restful API Spec & generated clients",
   "license": "Apache-2.0",
   "main": "src/index.js",
   "scripts": {
