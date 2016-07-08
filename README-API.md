@@ -2,9 +2,9 @@
 
 This SDK Contains automatically generated sources & documents with the [Swagger Codegen](https://github.com/swagger-api/swagger-codegen) project:
 
-- API version: 0.2.0
-- Package version: 0.2.0
-- Build date: 2016-07-07T17:22:13.863+09:00
+- API version: 0.3.0
+- Package version: 0.3.0
+- Build date: 2016-07-08T19:23:08.500+09:00
 - Build package: class io.swagger.codegen.languages.JavascriptClientCodegen
 
 ## Getting Started

@@ -1,5 +1,5 @@
 #
-# Webida Service Api specifiaion
+# Webida Restful Api specifiaion
 #
 
 # Current api desingn rules
@@ -21,15 +21,16 @@
 swagger: "2.0"
 
 info:
-  version: "0.2.0"
+  version: "0.3.0"
   title: Webida Restful API
   description: Restful API for Webida clients to use server's data & features
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
 
-# Should not include host / schemes in this spec, for server/client implementation
-#  wants to override the values always, anyway.
+# Should not include host / schemes in this spec when publishing,
+#  for server/client implementations 'ALWAYS' tend to override the value to current
+#  service url.
 
 basePath: /api
 
@@ -64,6 +65,8 @@ paths:
         to use any other perpose than finding available workspaces, and should not refresh
         the token. (Let user log-in again)
 
+        Login API does not force any encryption. Server should provide secure transport channel,
+        usually https, to provide remote access, always.
       operationId: login
       parameters:
         - name: body
@@ -83,12 +86,13 @@ paths:
 
   /auth/info:
     get:
-      x-handler: handlers/auth/info.js
+      x-handler: handlers/auth/getInfo.js
       tags: ["auth"]
       description: |
         Gets user information of that can be identified with current access token. Implementations
-        should provide a more restful api based on domain data model. Don"t override this operation
-        for multi-user system.
+        should provide a more restful api based on domain data model, not extending this operation.
+        (e.g. GET,PUT and DELETE on /Users/{userId} to read, update and delete user)
+
       operationId: getInfo
       security:
         - webida-simple-auth: []
@@ -108,14 +112,19 @@ paths:
 
   /auth/token:
     post:
-      x-handler: handlers/auth/token.js
+      x-handler: handlers/auth/issueToken.js
       tags: ["auth"]
       description: |
-        Creates new token from current access token, inheriting workspace id & session id
-        Duration of generated token is (and should not be) parameterizable. Server should
-        set proper time, respecting "reconnect" period of web socket clients. Most of the
-        socket implementations (including socket.io) do not provide any ways to change
-        connection parameters (header or query) while reconnecting to server.
+        Creates new token from current access token, inheriting workspace id & session id.
+        The duration of generated token is (and should not be) parameterizable. Server should
+        set proper duration, respecting "reconnect" period of socket.io clients. Remember that
+        most of socket.io client implementations (including official js client) do not provide
+        any ways to change connection parameters (header or query) while reconnecting to server.
+
+        Like login API, this endpoint does not provide any encryption. Server should not set any
+        data to harm security in the token & should provide some signinig/encryption mechanism
+        to protect token. Simple JSON Web Token with HMAC-SHA will do.
+
       operationId: issueToken
       security:
         - webida-simple-auth: []
@@ -190,7 +199,11 @@ paths:
     put:
       x-handler: handlers/wfs/writeFile.js
       tags: ["wfs"]
-      description: Creates / updates file with body data
+      description: |
+        Creates / updates file with body data. Server should write the file in 'atomic' manner,
+        and should not write down request body into final destination path directly. In other words,
+        wheather writeFile() succeeds or not, the contents of the file should not be corrupted nor
+        half-written.
       operationId: writeFile
       consumes:
         - multipart/form-data
@@ -199,7 +212,7 @@ paths:
       parameters:
         - $ref: "#/parameters/wfsId"
         - $ref: "#/parameters/wfsPath"
-        - $ref: "#/parameters/ensure"
+        - $ref: "#/parameters/ensureParents"
         - name: data
           in: formData
           required: true
@@ -219,7 +232,10 @@ paths:
     post:
       x-handler: handlers/wfs/rename.js
       tags: ["wfs"]
-      description: Rename a file or directory to. This api does not overwrite existing one. 
+      description: |
+        Renames a file or directory to wfsPath. Unlike POSIX rename() call semantics, this operation
+        does not overwrite anything. Renaming to any 'existing' source will return error except
+        only 1 case, with emulateMove option.
       operationId: rename
       security:
         - webida-simple-auth: []
@@ -227,7 +243,16 @@ paths:
         - $ref: "#/parameters/wfsId"
         - $ref: "#/parameters/wfsPath"
         - $ref: "#/parameters/srcPath"
-        - $ref: "#/parameters/ensure"
+        - $ref: "#/parameters/ensureParents"
+        - name: emulateMove
+          in: query
+          description: |
+            When rename file to existing dir, move file to the dir instead of returning error.
+            This option is provided for legacy, dummy clients only to emulate legacy server's
+            move behaviour. Newly written client app should not use this option & use move()
+            operation to have clear behaviour.
+          required: false
+          type: boolean
       responses:
         "200":
           description: OK
@@ -303,6 +328,7 @@ paths:
         - $ref: "#/parameters/wfsId"
         - $ref: "#/parameters/wfsPath"
         - $ref: "#/parameters/srcPath"
+        - $ref: "#/parameters/ensurePath"
         - $ref: "#/parameters/removeExisting"
       responses:
         "200":
@@ -360,11 +386,13 @@ paths:
       x-handler: handlers/wfs/copy.js
       tags: ["wfs"]
       description: |
-        Copy to given path. Works like cp -r command, with some funny options.
-        Copying a dir on to existing file will return error if removeExisting is false.
-        If removeExisting is true, destination path will be 'clobbed' before copying file.
-        So, delete event will be delivered first, before creating new dir/files.
-        And, plz, Do not use this operation to duplicate socket/fifo/devices.
+        Copy to given path. Works like cp -r command, with some funny options. That means,
+        if destination is a directory, result will be put 'in' the directory with same base name
+        to the source.
+
+        If removeExisting option is false, copying a directory onto a file will return error.
+        Or, destination path will be 'clobbed' before copying file, regardless wheather the path
+        is file or not.
       operationId: copy
       security:
         - webida-simple-auth: []
@@ -372,6 +400,7 @@ paths:
         - $ref: "#/parameters/wfsId"
         - $ref: "#/parameters/wfsPath"
         - $ref: "#/parameters/srcPath"
+        - $ref: "#/parameters/ensurePath"
         - $ref: "#/parameters/removeExisting"
         - name: followSymbolicLinks
           in: query
@@ -379,17 +408,12 @@ paths:
           required: false
           type: boolean
           default: false
-        - name: noPreserveTimestamps
+        - name: preserveTimestamps
           in: query
           description: to change default behavior, keep mtime/atime of source files in destination
           required: false
           type: boolean
           default: false
-        - name: filterPattern
-          in: query
-          description: execute copy if source matches to this regex pattern.
-          required: false
-          type: string
       responses:
         "200":
           description: OK
@@ -412,7 +436,12 @@ paths:
       parameters:
         - $ref: "#/parameters/wfsId"
         - $ref: "#/parameters/wfsPath"
-        - $ref: "#/parameters/recursive"
+        - name: unrecursive
+          in: query
+          required: false
+          description: if set, deleting non-empty directory will return error.
+          type: boolean
+          default: false
       responses:
         "200":
           description: OK
@@ -438,14 +467,15 @@ paths:
         - $ref: "#/parameters/wfsPath"
         - $ref: "#/parameters/pattern"
         - $ref: "#/parameters/ignoreCase"
-        - $ref: "#/parameters/wholeWord"
       responses:
         "200":
-          description: stats list (define SearchResult first)
+          description: search
           schema:
             type: object
             additionalProperties:
-              $ref: "#/definitions/Match"
+              type: array
+              items:
+                $ref: "#/definitions/Match"
         default:
           description: Error
           schema:
@@ -470,7 +500,6 @@ paths:
           type: string
           required: true
         - $ref: "#/parameters/ignoreCase"
-        - $ref: "#/parameters/wholeWord"
       responses:
         "200":
           description: done
@@ -865,8 +894,6 @@ paths:
           schema:
             $ref: "#/definitions/RestError"
 
-  # metadata save/load APIs are coming soon...
-
   /sessions:
     get:
       x-handler: handlers/session/findSessions.js
@@ -984,20 +1011,31 @@ parameters:
       type: string
     collectionFormat: multi
 
-  ensure:
-    name: ensure
+  ensureParents:
+    name: ensureParents
     in: query
-    required: false
-    description: flag to create all parent directories to create file or dir, like mkdir -p
+    description: |
+      A flag to create all parent directories to create file or dir, like mkdir -p. This parameter
+      does not create entire path, but creates to 'parent directory' of the path.
     type: boolean
+    required: false
     default: false
 
-  recursive:
-    name: recursive
+  ensurePath:
+    name: ensurePath
     in: query
-    required: false
-    description: flag to set copy with
+    description: |
+      Create a directory if wfsPath denotes unexisting path. Unlike 'ensure' parameter, this flag
+      creates entire path as a directory. If there's a existing file in the path, this flag will
+      not work and the operation will return error.
+
+      While copying or moving, 'ensure' option can make same operation to have 2 possible results,
+      depending on the existence of wfsPath. (e.g. Moving to some/path from some/source
+      with ensure canm create some/source or some/path/source. With ensurePath option, the result
+      can be fixed to some/path/source) If client does now know the actual directory structure or
+      has false directory structure cache, that ambiguity can be a really painful bug.
     type: boolean
+    required: false
     default: false
 
   removeExisting:
@@ -1011,22 +1049,18 @@ parameters:
   pattern:
     name: pattern
     in: query
-    description: regex pattern to match
+    description: |
+      regex pattern to match in search or replace.
+      In replace operation, pattern should be same to the parttern in search operation
     type: string
     required: true
 
   ignoreCase:
     name: ignoreCase
     in: query
-    description: regex matching option to ignore case
-    type: boolean
-    required: false
-    default: false
-
-  wholeWord:
-    name: wholeWord
-    in: query
-    description: regex matching option to match whole word
+    description: |
+      regex matching option to ignore case.
+      In replace operation, this option should be same to one used in search operation
     type: boolean
     required: false
     default: false
@@ -1135,7 +1169,7 @@ definitions:
     description: |
         Any services/products should define some admin apis to manage users in the system and
         expose what should be exposed to client app. So, no properties are mandatory.
-        Currently, properties are defined for compatiblity with legacy clients.
+        Currently, the properties are defined for compatiblity with legacy clients.
     properties:
       id:
         type: string
@@ -1233,18 +1267,74 @@ definitions:
         type: string
         format: date-time
       accessedAt:
-        description: the time when the last session on this workspace was made
+        description: the time when the last session on this workspace was made. (optional)
         type: string
         format: date-time
       workspacePath:
-        description: absolute path of this workspace in server. (not always available)
+        description: absolute path of this workspace in server.
         type: string
+      excludedPaths:
+        description: |
+          glob patterns (Not regular expression!) or directory paths (Not a file path!) to
+          be excluded for watch service and search & replace operation. If a value has no '*'
+          char, it will be treated as directory path.
+
+          Like most of operation parameters, paths (and patterns not prefixed with '*') should
+          have relative, unixified form. If not, server should reject or discard the absolute
+           values.
+
+          If a directory is specified to be excluded, watch service may deliver unlinkDir/addDir
+          events of the dir, but should not deliver any events from its sub-dirs and files.
+          Search and replace operation should ignore any files under the directory. If path
+          denotes a file, server may reject or discard the path.
+
+          Server should support basic glob pattern,  '**' and '*' in the glob pattern but not !
+          '!' prefix is optional. Client should not register any other extended glob features
+          that server does not support.
+        type: array
+        items:
+          type: string
+      offlineCachePaths:
+        description: |
+          any paths (including excluded paths) to be cached in remote clients.
+
+          Browser client should respect offline cache paths always. Desktop-app client
+          may not use off-line cache for local (embedded) server but shall use cache for any
+          remote servers, even for same host. All caches should be partitioned with workspace
+          id, globally unique value through time and space.
+
+          Client should pre-fetch the contents of offline cache paths when it start IDE sessions
+          on a workspace to use for off-line state. When client goes to off-line, after losing
+          connection to server, it can use cached data as reply of some WFS operations and can
+          write some data to cache to save workspace data & metadata. The changes should be
+          persistent on client side safely. C
+
+          When a client recovers connectivity to server, it should check the stats of files and
+          dirs to upload if it has got some changes in offline state. If server has more recents
+          contents, client should drop chagnes and refill the cache with fresher data. Client may
+          have some 'time-tolerance' to accept server's data is fresher than client's, smaller than
+          serveral seconds. If server has more recent contents, client should drop the changes and
+          refill the cache with fresher data. If not, client should replay the changes 1 by 1.
+
+          Same protocol should be applied when client application starts with some 'unuploaded
+          change' evertime. That means, client should save 'change history' with 'changed data'
+          too, to process it later, when starting app again in normal condition.
+
+          All Clients should not replay any 'delete' operations while replaying changes on client's
+          cache, to protect from more serious problems with skewed timer or unexpected behaviors.
+          And, of course, client should not rely on cached data while connection state is healthy.
+        type: array
+        items:
+          type: string
+
     required:
       - id
       - name
       - description
       - createdAt
-      - accessedAt
+      - workspacePath
+      - excludedPaths
+      - offlineCachePaths
 
   RemoteAccess:
     type: object
@@ -1288,8 +1378,11 @@ definitions:
       state:
         description: |
           state of this session
+
           NORMAL = connected, normally working
+
           LOSING = disconnected, waiting reconnection. still accessible with api
+
           CLOSING = socket connection will close connection by server (clinet will be notified)
 
           there"s no "CLOSED" / "LOST" state, for server will remove session object in registry
@@ -1300,7 +1393,10 @@ definitions:
           - LOSING
           - CLOSING
       workspaceId:
-        description: the id of workspace that this sessions is working on.
+        description: |
+          the id of workspace that this sessions is working on. If falsy, then this session is
+          not belonged to any workpsace. Usually, dashboard / monitoring app will create a session
+          without workspace id.
         type: string
       clientAddress:
         description: the peer address of session connection. not always
@@ -1428,8 +1524,11 @@ definitions:
         description: the time when this process is spawned
         type: string
         format: date-time
-      sync:
-        description: true when this process is spawned by synchronous exec request
+      background:
+        description: |
+          true when this process is spawned by asynchronous exec request or some other ways to
+          spawn processes in server. fasle when this process is spawened with plain, synchronous
+          execution request.
         type: array
         items:
           type: string
@@ -1439,7 +1538,7 @@ definitions:
       - args
       - executionId
       - startedAt
-      - sync
+      - background
 
   # BulkOperationResponse: (pending for next release, 1.1)
   #   type: object

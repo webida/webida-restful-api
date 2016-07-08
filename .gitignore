@@ -4,4 +4,4 @@ node_modules/
 
 # code generator should be installed manually
 builder/swagger-codegen*.jar
-
+swagger-editor

@@ -33,13 +33,12 @@ var wfsId = "wfsId_example"; // String | webida file system id (same to workspac
 
 var wfsPathList = ["wfsPathList_example"]; // [String] | array of wfsPath, with heading /  (collection format may be changed by implementation)
 
-var pattern = "pattern_example"; // String | regex pattern to match
+var pattern = "pattern_example"; // String | regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation 
 
 var replaceTo = "replaceTo_example"; // String | string to replace with
 
 var opts = { 
-  'ignoreCase': false, // Boolean | regex matching option to ignore case
-  'wholeWord': false // Boolean | regex matching option to match whole word
+  'ignoreCase': false // Boolean | regex matching option to ignore case. In replace operation, this option should be same to one used in search operation 
 };
 
 var callback = function(error, data, response) {
@@ -58,10 +57,9 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
  **wfsPathList** | [**[String]**](String.md)| array of wfsPath, with heading /  (collection format may be changed by implementation) | 
- **pattern** | **String**| regex pattern to match | 
+ **pattern** | **String**| regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation  | 
  **replaceTo** | **String**| string to replace with | 
- **ignoreCase** | **Boolean**| regex matching option to ignore case | [optional] [default to false]
- **wholeWord** | **Boolean**| regex matching option to match whole word | [optional] [default to false]
+ **ignoreCase** | **Boolean**| regex matching option to ignore case. In replace operation, this option should be same to one used in search operation  | [optional] [default to false]
 
 ### Return type
 
@@ -78,7 +76,7 @@ Name | Type | Description  | Notes
 
 <a name="search"></a>
 # **search**
-> {&#39;String&#39;: Match} search(wfsId, wfsPath, pattern, opts)
+> {&#39;String&#39;: [Match]} search(wfsId, wfsPath, pattern, opts)
 
 
 
@@ -101,11 +99,10 @@ var wfsId = "wfsId_example"; // String | webida file system id (same to workspac
 
 var wfsPath = "wfsPath_example"; // String | webida file system path to access. without heading /. should be placed at the end of path arguments 
 
-var pattern = "pattern_example"; // String | regex pattern to match
+var pattern = "pattern_example"; // String | regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation 
 
 var opts = { 
-  'ignoreCase': false, // Boolean | regex matching option to ignore case
-  'wholeWord': false // Boolean | regex matching option to match whole word
+  'ignoreCase': false // Boolean | regex matching option to ignore case. In replace operation, this option should be same to one used in search operation 
 };
 
 var callback = function(error, data, response) {
@@ -124,13 +121,12 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
  **wfsPath** | **String**| webida file system path to access. without heading /. should be placed at the end of path arguments  | 
- **pattern** | **String**| regex pattern to match | 
- **ignoreCase** | **Boolean**| regex matching option to ignore case | [optional] [default to false]
- **wholeWord** | **Boolean**| regex matching option to match whole word | [optional] [default to false]
+ **pattern** | **String**| regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation  | 
+ **ignoreCase** | **Boolean**| regex matching option to ignore case. In replace operation, this option should be same to one used in search operation  | [optional] [default to false]
 
 ### Return type
 
-[**{&#39;String&#39;: Match}**](Match.md)
+**{&#39;String&#39;: [Match]}**
 
 ### Authorization
 

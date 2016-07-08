@@ -2,7 +2,7 @@
   "swagger" : "2.0",
   "info" : {
     "description" : "Restful API for Webida clients to use server's data & features",
-    "version" : "0.2.0",
+    "version" : "0.3.0",
     "title" : "Webida Restful API",
     "license" : {
       "name" : "Apache 2.0",
@@ -16,7 +16,7 @@
     "/auth/info" : {
       "get" : {
         "tags" : [ "auth" ],
-        "description" : "Gets user information of that can be identified with current access token. Implementations\nshould provide a more restful api based on domain data model. Don\"t override this operation\nfor multi-user system.\n",
+        "description" : "Gets user information of that can be identified with current access token. Implementations\nshould provide a more restful api based on domain data model, not extending this operation.\n(e.g. GET,PUT and DELETE on /Users/{userId} to read, update and delete user)\n",
         "operationId" : "getInfo",
         "parameters" : [ ],
         "responses" : {
@@ -42,13 +42,13 @@
         "security" : [ {
           "webida-simple-auth" : [ ]
         } ],
-        "x-handler" : "handlers/auth/info.js"
+        "x-handler" : "handlers/auth/getInfo.js"
       }
     },
     "/auth/login" : {
       "post" : {
         "tags" : [ "auth" ],
-        "description" : "A \"VERY\" basic authentication, required to use webida-simple-auth security scheme.\n\nService / Product implementations who need better security, should override this operation\nor add their own login api or some other specs like OAuth2. Simple auth is not suitable\nfor large-sacle, multi-tennant service, for the scheme assumes a single, trusted user only.\n\nLogging-in with master token, the generated access token inherits all restriction from it.\nOn the other hand, normal log-in with login id & password creates an unrestricted access\ntoken, with reasonably short expiration time.\n\nEvery client should spawn another access token with issueToken API before current\naccess token expires, inheriting session id from current token. To save remote access\ninfo, client should create a (restricted but long-ttl) master token to start IDE from\nremote. The remote client should not use the unrestricted acccess token from login\nto use any other perpose than finding available workspaces, and should not refresh\nthe token. (Let user log-in again)\n",
+        "description" : "A \"VERY\" basic authentication, required to use webida-simple-auth security scheme.\n\nService / Product implementations who need better security, should override this operation\nor add their own login api or some other specs like OAuth2. Simple auth is not suitable\nfor large-sacle, multi-tennant service, for the scheme assumes a single, trusted user only.\n\nLogging-in with master token, the generated access token inherits all restriction from it.\nOn the other hand, normal log-in with login id & password creates an unrestricted access\ntoken, with reasonably short expiration time.\n\nEvery client should spawn another access token with issueToken API before current\naccess token expires, inheriting session id from current token. To save remote access\ninfo, client should create a (restricted but long-ttl) master token to start IDE from\nremote. The remote client should not use the unrestricted acccess token from login\nto use any other perpose than finding available workspaces, and should not refresh\nthe token. (Let user log-in again)\n\nLogin API does not force any encryption. Server should provide secure transport channel,\nusually https, to provide remote access, always.\n",
         "operationId" : "login",
         "parameters" : [ {
           "in" : "body",
@@ -78,7 +78,7 @@
     "/auth/token" : {
       "post" : {
         "tags" : [ "auth" ],
-        "description" : "Creates new token from current access token, inheriting workspace id & session id\nDuration of generated token is (and should not be) parameterizable. Server should\nset proper time, respecting \"reconnect\" period of web socket clients. Most of the\nsocket implementations (including socket.io) do not provide any ways to change\nconnection parameters (header or query) while reconnecting to server.\n",
+        "description" : "Creates new token from current access token, inheriting workspace id & session id.\nThe duration of generated token is (and should not be) parameterizable. Server should\nset proper duration, respecting \"reconnect\" period of socket.io clients. Remember that\nmost of socket.io client implementations (including official js client) do not provide\nany ways to change connection parameters (header or query) while reconnecting to server.\n\nLike login API, this endpoint does not provide any encryption. Server should not set any\ndata to harm security in the token & should provide some signinig/encryption mechanism\nto protect token. Simple JSON Web Token with HMAC-SHA will do.\n",
         "operationId" : "issueToken",
         "parameters" : [ {
           "name" : "type",
@@ -110,7 +110,7 @@
         "security" : [ {
           "webida-simple-auth" : [ ]
         } ],
-        "x-handler" : "handlers/auth/token.js"
+        "x-handler" : "handlers/auth/issueToken.js"
       }
     },
     "/remotes" : {
@@ -351,7 +351,7 @@
       },
       "put" : {
         "tags" : [ "wfs" ],
-        "description" : "Copy to given path. Works like cp -r command, with some funny options.\nCopying a dir on to existing file will return error if removeExisting is false.\nIf removeExisting is true, destination path will be 'clobbed' before copying file.\nSo, delete event will be delivered first, before creating new dir/files.\nAnd, plz, Do not use this operation to duplicate socket/fifo/devices.\n",
+        "description" : "Copy to given path. Works like cp -r command, with some funny options. That means,\nif destination is a directory, result will be put 'in' the directory with same base name\nto the source.\n\nIf removeExisting option is false, copying a directory onto a file will return error.\nOr, destination path will be 'clobbed' before copying file, regardless wheather the path\nis file or not.\n",
         "operationId" : "copy",
         "parameters" : [ {
           "name" : "wfsId",
@@ -373,6 +373,13 @@
           "required" : true,
           "type" : "string"
         }, {
+          "name" : "ensurePath",
+          "in" : "query",
+          "description" : "Create a directory if wfsPath denotes unexisting path. Unlike 'ensure' parameter, this flag\ncreates entire path as a directory. If there's a existing file in the path, this flag will\nnot work and the operation will return error.\n\nWhile copying or moving, 'ensure' option can make same operation to have 2 possible results,\ndepending on the existence of wfsPath. (e.g. Moving to some/path from some/source\nwith ensure canm create some/source or some/path/source. With ensurePath option, the result\ncan be fixed to some/path/source) If client does now know the actual directory structure or\nhas false directory structure cache, that ambiguity can be a really painful bug.\n",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
+        }, {
           "name" : "removeExisting",
           "in" : "query",
           "description" : "remove any existing file/dir before writing.",
@@ -387,18 +394,12 @@
           "type" : "boolean",
           "default" : false
         }, {
-          "name" : "noPreserveTimestamps",
+          "name" : "preserveTimestamps",
           "in" : "query",
           "description" : "to change default behavior, keep mtime/atime of source files in destination",
           "required" : false,
           "type" : "boolean",
           "default" : false
-        }, {
-          "name" : "filterPattern",
-          "in" : "query",
-          "description" : "execute copy if source matches to this regex pattern.",
-          "required" : false,
-          "type" : "string"
         } ],
         "responses" : {
           "200" : {
@@ -437,9 +438,9 @@
           "type" : "string",
           "pattern" : ".*"
         }, {
-          "name" : "recursive",
+          "name" : "unrecursive",
           "in" : "query",
-          "description" : "flag to set copy with",
+          "description" : "if set, deleting non-empty directory will return error.",
           "required" : false,
           "type" : "boolean",
           "default" : false
@@ -531,6 +532,13 @@
           "description" : "source data path of some operations, with have heading /",
           "required" : true,
           "type" : "string"
+        }, {
+          "name" : "ensurePath",
+          "in" : "query",
+          "description" : "Create a directory if wfsPath denotes unexisting path. Unlike 'ensure' parameter, this flag\ncreates entire path as a directory. If there's a existing file in the path, this flag will\nnot work and the operation will return error.\n\nWhile copying or moving, 'ensure' option can make same operation to have 2 possible results,\ndepending on the existence of wfsPath. (e.g. Moving to some/path from some/source\nwith ensure canm create some/source or some/path/source. With ensurePath option, the result\ncan be fixed to some/path/source) If client does now know the actual directory structure or\nhas false directory structure cache, that ambiguity can be a really painful bug.\n",
+          "required" : false,
+          "type" : "boolean",
+          "default" : false
         }, {
           "name" : "removeExisting",
           "in" : "query",
@@ -636,7 +644,7 @@
       },
       "post" : {
         "tags" : [ "wfs" ],
-        "description" : "Rename a file or directory to. This api does not overwrite existing one.",
+        "description" : "Renames a file or directory to wfsPath. Unlike POSIX rename() call semantics, this operation\ndoes not overwrite anything. Renaming to any 'existing' source will return error except\nonly 1 case, with emulateMove option.\n",
         "operationId" : "rename",
         "parameters" : [ {
           "name" : "wfsId",
@@ -658,12 +666,18 @@
           "required" : true,
           "type" : "string"
         }, {
-          "name" : "ensure",
+          "name" : "ensureParents",
           "in" : "query",
-          "description" : "flag to create all parent directories to create file or dir, like mkdir -p",
+          "description" : "A flag to create all parent directories to create file or dir, like mkdir -p. This parameter\ndoes not create entire path, but creates to 'parent directory' of the path.\n",
           "required" : false,
           "type" : "boolean",
           "default" : false
+        }, {
+          "name" : "emulateMove",
+          "in" : "query",
+          "description" : "When rename file to existing dir, move file to the dir instead of returning error.\nThis option is provided for legacy, dummy clients only to emulate legacy server's\nmove behaviour. Newly written client app should not use this option & use move()\noperation to have clear behaviour.\n",
+          "required" : false,
+          "type" : "boolean"
         } ],
         "responses" : {
           "200" : {
@@ -686,7 +700,7 @@
       },
       "put" : {
         "tags" : [ "wfs" ],
-        "description" : "Creates / updates file with body data",
+        "description" : "Creates / updates file with body data. Server should write the file in 'atomic' manner,\nand should not write down request body into final destination path directly. In other words,\nwheather writeFile() succeeds or not, the contents of the file should not be corrupted nor\nhalf-written.\n",
         "operationId" : "writeFile",
         "consumes" : [ "multipart/form-data" ],
         "parameters" : [ {
@@ -703,9 +717,9 @@
           "type" : "string",
           "pattern" : ".*"
         }, {
-          "name" : "ensure",
+          "name" : "ensureParents",
           "in" : "query",
-          "description" : "flag to create all parent directories to create file or dir, like mkdir -p",
+          "description" : "A flag to create all parent directories to create file or dir, like mkdir -p. This parameter\ndoes not create entire path, but creates to 'parent directory' of the path.\n",
           "required" : false,
           "type" : "boolean",
           "default" : false
@@ -760,7 +774,7 @@
         }, {
           "name" : "pattern",
           "in" : "query",
-          "description" : "regex pattern to match",
+          "description" : "regex pattern to match in search or replace.\nIn replace operation, pattern should be same to the parttern in search operation\n",
           "required" : true,
           "type" : "string"
         }, {
@@ -772,14 +786,7 @@
         }, {
           "name" : "ignoreCase",
           "in" : "query",
-          "description" : "regex matching option to ignore case",
-          "required" : false,
-          "type" : "boolean",
-          "default" : false
-        }, {
-          "name" : "wholeWord",
-          "in" : "query",
-          "description" : "regex matching option to match whole word",
+          "description" : "regex matching option to ignore case.\nIn replace operation, this option should be same to one used in search operation\n",
           "required" : false,
           "type" : "boolean",
           "default" : false
@@ -825,31 +832,27 @@
         }, {
           "name" : "pattern",
           "in" : "query",
-          "description" : "regex pattern to match",
+          "description" : "regex pattern to match in search or replace.\nIn replace operation, pattern should be same to the parttern in search operation\n",
           "required" : true,
           "type" : "string"
         }, {
           "name" : "ignoreCase",
           "in" : "query",
-          "description" : "regex matching option to ignore case",
-          "required" : false,
-          "type" : "boolean",
-          "default" : false
-        }, {
-          "name" : "wholeWord",
-          "in" : "query",
-          "description" : "regex matching option to match whole word",
+          "description" : "regex matching option to ignore case.\nIn replace operation, this option should be same to one used in search operation\n",
           "required" : false,
           "type" : "boolean",
           "default" : false
         } ],
         "responses" : {
           "200" : {
-            "description" : "stats list (define SearchResult first)",
+            "description" : "search",
             "schema" : {
               "type" : "object",
               "additionalProperties" : {
-                "$ref" : "#/definitions/Match"
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/definitions/Match"
+                }
               }
             }
           },
@@ -1373,7 +1376,7 @@
           "type" : "string"
         }
       },
-      "description" : "Any services/products should define some admin apis to manage users in the system and\nexpose what should be exposed to client app. So, no properties are mandatory.\nCurrently, properties are defined for compatiblity with legacy clients.\n"
+      "description" : "Any services/products should define some admin apis to manage users in the system and\nexpose what should be exposed to client app. So, no properties are mandatory.\nCurrently, the properties are defined for compatiblity with legacy clients.\n"
     },
     "Stats" : {
       "type" : "object",
@@ -1438,7 +1441,7 @@
     },
     "Workspace" : {
       "type" : "object",
-      "required" : [ "accessedAt", "createdAt", "description", "id", "name" ],
+      "required" : [ "createdAt", "description", "excludedPaths", "id", "name", "offlineCachePaths", "workspacePath" ],
       "properties" : {
         "id" : {
           "type" : "string",
@@ -1460,11 +1463,25 @@
         "accessedAt" : {
           "type" : "string",
           "format" : "date-time",
-          "description" : "the time when the last session on this workspace was made"
+          "description" : "the time when the last session on this workspace was made. (optional)"
         },
         "workspacePath" : {
           "type" : "string",
-          "description" : "absolute path of this workspace in server. (not always available)"
+          "description" : "absolute path of this workspace in server."
+        },
+        "excludedPaths" : {
+          "type" : "array",
+          "description" : "glob patterns (Not regular expression!) or directory paths (Not a file path!) to\nbe excluded for watch service and search & replace operation. If a value has no '*'\nchar, it will be treated as directory path.\n\nLike most of operation parameters, paths (and patterns not prefixed with '*') should\nhave relative, unixified form. If not, server should reject or discard the absolute\n values.\n\nIf a directory is specified to be excluded, watch service may deliver unlinkDir/addDir\nevents of the dir, but should not deliver any events from its sub-dirs and files.\nSearch and replace operation should ignore any files under the directory. If path\ndenotes a file, server may reject or discard the path.\n\nServer should support basic glob pattern,  '**' and '*' in the glob pattern but not !\n'!' prefix is optional. Client should not register any other extended glob features\nthat server does not support.\n",
+          "items" : {
+            "type" : "string"
+          }
+        },
+        "offlineCachePaths" : {
+          "type" : "array",
+          "description" : "any paths (including excluded paths) to be cached in remote clients.\n\nBrowser client should respect offline cache paths always. Desktop-app client\nmay not use off-line cache for local (embedded) server but shall use cache for any\nremote servers, even for same host. All caches should be partitioned with workspace\nid, globally unique value through time and space.\n\nClient should pre-fetch the contents of offline cache paths when it start IDE sessions\non a workspace to use for off-line state. When client goes to off-line, after losing\nconnection to server, it can use cached data as reply of some WFS operations and can\nwrite some data to cache to save workspace data & metadata. The changes should be\npersistent on client side safely. C\n\nWhen a client recovers connectivity to server, it should check the stats of files and\ndirs to upload if it has got some changes in offline state. If server has more recents\ncontents, client should drop chagnes and refill the cache with fresher data. Client may\nhave some 'time-tolerance' to accept server's data is fresher than client's, smaller than\nserveral seconds. If server has more recent contents, client should drop the changes and\nrefill the cache with fresher data. If not, client should replay the changes 1 by 1.\n\nSame protocol should be applied when client application starts with some 'unuploaded\nchange' evertime. That means, client should save 'change history' with 'changed data'\ntoo, to process it later, when starting app again in normal condition.\n\nAll Clients should not replay any 'delete' operations while replaying changes on client's\ncache, to protect from more serious problems with skewed timer or unexpected behaviors.\nAnd, of course, client should not rely on cached data while connection state is healthy.\n",
+          "items" : {
+            "type" : "string"
+          }
         }
       },
       "description" : "A workspace in server"
@@ -1510,12 +1527,12 @@
         },
         "state" : {
           "type" : "string",
-          "description" : "state of this session\nNORMAL = connected, normally working\nLOSING = disconnected, waiting reconnection. still accessible with api\nCLOSING = socket connection will close connection by server (clinet will be notified)\n\nthere\"s no \"CLOSED\" / \"LOST\" state, for server will remove session object in registry\nwhen the server closes connection or stops waiting for reconnection for timeout.\n",
+          "description" : "state of this session\n\nNORMAL = connected, normally working\n\nLOSING = disconnected, waiting reconnection. still accessible with api\n\nCLOSING = socket connection will close connection by server (clinet will be notified)\n\nthere\"s no \"CLOSED\" / \"LOST\" state, for server will remove session object in registry\nwhen the server closes connection or stops waiting for reconnection for timeout.\n",
           "enum" : [ "NORMAL", "LOSING", "CLOSING" ]
         },
         "workspaceId" : {
           "type" : "string",
-          "description" : "the id of workspace that this sessions is working on."
+          "description" : "the id of workspace that this sessions is working on. If falsy, then this session is\nnot belonged to any workpsace. Usually, dashboard / monitoring app will create a session\nwithout workspace id.\n"
         },
         "clientAddress" : {
           "type" : "string",
@@ -1599,7 +1616,7 @@
     },
     "ChildProcess" : {
       "type" : "object",
-      "required" : [ "args", "command", "executionId", "pid", "startedAt", "sync" ],
+      "required" : [ "args", "background", "command", "executionId", "pid", "startedAt" ],
       "properties" : {
         "pid" : {
           "type" : "integer",
@@ -1625,9 +1642,9 @@
           "format" : "date-time",
           "description" : "the time when this process is spawned"
         },
-        "sync" : {
+        "background" : {
           "type" : "array",
-          "description" : "true when this process is spawned by synchronous exec request",
+          "description" : "true when this process is spawned by asynchronous exec request or some other ways to\nspawn processes in server. fasle when this process is spawened with plain, synchronous\nexecution request.\n",
           "items" : {
             "type" : "string"
           }
@@ -1670,18 +1687,18 @@
       },
       "collectionFormat" : "multi"
     },
-    "ensure" : {
-      "name" : "ensure",
+    "ensureParents" : {
+      "name" : "ensureParents",
       "in" : "query",
-      "description" : "flag to create all parent directories to create file or dir, like mkdir -p",
+      "description" : "A flag to create all parent directories to create file or dir, like mkdir -p. This parameter\ndoes not create entire path, but creates to 'parent directory' of the path.\n",
       "required" : false,
       "type" : "boolean",
       "default" : false
     },
-    "recursive" : {
-      "name" : "recursive",
+    "ensurePath" : {
+      "name" : "ensurePath",
       "in" : "query",
-      "description" : "flag to set copy with",
+      "description" : "Create a directory if wfsPath denotes unexisting path. Unlike 'ensure' parameter, this flag\ncreates entire path as a directory. If there's a existing file in the path, this flag will\nnot work and the operation will return error.\n\nWhile copying or moving, 'ensure' option can make same operation to have 2 possible results,\ndepending on the existence of wfsPath. (e.g. Moving to some/path from some/source\nwith ensure canm create some/source or some/path/source. With ensurePath option, the result\ncan be fixed to some/path/source) If client does now know the actual directory structure or\nhas false directory structure cache, that ambiguity can be a really painful bug.\n",
       "required" : false,
       "type" : "boolean",
       "default" : false
@@ -1697,22 +1714,14 @@
     "pattern" : {
       "name" : "pattern",
       "in" : "query",
-      "description" : "regex pattern to match",
+      "description" : "regex pattern to match in search or replace.\nIn replace operation, pattern should be same to the parttern in search operation\n",
       "required" : true,
       "type" : "string"
     },
     "ignoreCase" : {
       "name" : "ignoreCase",
       "in" : "query",
-      "description" : "regex matching option to ignore case",
-      "required" : false,
-      "type" : "boolean",
-      "default" : false
-    },
-    "wholeWord" : {
-      "name" : "wholeWord",
-      "in" : "query",
-      "description" : "regex matching option to match whole word",
+      "description" : "regex matching option to ignore case.\nIn replace operation, this option should be same to one used in search operation\n",
       "required" : false,
       "type" : "boolean",
       "default" : false
