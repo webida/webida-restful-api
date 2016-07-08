@@ -15,7 +15,7 @@ Method | HTTP request | Description
 
 
 
-Gets user information of that can be identified with current access token. Implementations should provide a more restful api based on domain data model. Don\&quot;t override this operation for multi-user system. 
+Gets user information of that can be identified with current access token. Implementations should provide a more restful api based on domain data model, not extending this operation. (e.g. GET,PUT and DELETE on /Users/{userId} to read, update and delete user) 
 
 ### Example
 ```javascript
@@ -62,7 +62,7 @@ This endpoint does not need any parameter.
 
 
 
-Creates new token from current access token, inheriting workspace id &amp; session id Duration of generated token is (and should not be) parameterizable. Server should set proper time, respecting \&quot;reconnect\&quot; period of web socket clients. Most of the socket implementations (including socket.io) do not provide any ways to change connection parameters (header or query) while reconnecting to server. 
+Creates new token from current access token, inheriting workspace id &amp; session id. The duration of generated token is (and should not be) parameterizable. Server should set proper duration, respecting \&quot;reconnect\&quot; period of socket.io clients. Remember that most of socket.io client implementations (including official js client) do not provide any ways to change connection parameters (header or query) while reconnecting to server.  Like login API, this endpoint does not provide any encryption. Server should not set any data to harm security in the token &amp; should provide some signinig/encryption mechanism to protect token. Simple JSON Web Token with HMAC-SHA will do. 
 
 ### Example
 ```javascript
@@ -119,7 +119,7 @@ Name | Type | Description  | Notes
 
 
 
-A \&quot;VERY\&quot; basic authentication, required to use webida-simple-auth security scheme.  Service / Product implementations who need better security, should override this operation or add their own login api or some other specs like OAuth2. Simple auth is not suitable for large-sacle, multi-tennant service, for the scheme assumes a single, trusted user only.  Logging-in with master token, the generated access token inherits all restriction from it. On the other hand, normal log-in with login id &amp; password creates an unrestricted access token, with reasonably short expiration time.  Every client should spawn another access token with issueToken API before current access token expires, inheriting session id from current token. To save remote access info, client should create a (restricted but long-ttl) master token to start IDE from remote. The remote client should not use the unrestricted acccess token from login to use any other perpose than finding available workspaces, and should not refresh the token. (Let user log-in again) 
+A \&quot;VERY\&quot; basic authentication, required to use webida-simple-auth security scheme.  Service / Product implementations who need better security, should override this operation or add their own login api or some other specs like OAuth2. Simple auth is not suitable for large-sacle, multi-tennant service, for the scheme assumes a single, trusted user only.  Logging-in with master token, the generated access token inherits all restriction from it. On the other hand, normal log-in with login id &amp; password creates an unrestricted access token, with reasonably short expiration time.  Every client should spawn another access token with issueToken API before current access token expires, inheriting session id from current token. To save remote access info, client should create a (restricted but long-ttl) master token to start IDE from remote. The remote client should not use the unrestricted acccess token from login to use any other perpose than finding available workspaces, and should not refresh the token. (Let user log-in again)  Login API does not force any encryption. Server should provide secure transport channel, usually https, to provide remote access, always. 
 
 ### Example
 ```javascript

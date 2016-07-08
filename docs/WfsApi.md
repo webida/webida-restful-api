@@ -21,7 +21,7 @@ Method | HTTP request | Description
 
 
 
-Copy to given path. Works like cp -r command, with some funny options. Copying a dir on to existing file will return error if removeExisting is false. If removeExisting is true, destination path will be &#39;clobbed&#39; before copying file. So, delete event will be delivered first, before creating new dir/files. And, plz, Do not use this operation to duplicate socket/fifo/devices. 
+Copy to given path. Works like cp -r command, with some funny options. That means, if destination is a directory, result will be put &#39;in&#39; the directory with same base name to the source.  If removeExisting option is false, copying a directory onto a file will return error. Or, destination path will be &#39;clobbed&#39; before copying file, regardless wheather the path is file or not. 
 
 ### Example
 ```javascript
@@ -43,10 +43,10 @@ var wfsPath = "wfsPath_example"; // String | webida file system path to access. 
 var srcPath = "srcPath_example"; // String | source data path of some operations, with have heading /
 
 var opts = { 
+  'ensurePath': false, // Boolean | Create a directory if wfsPath denotes unexisting path. Unlike 'ensure' parameter, this flag creates entire path as a directory. If there's a existing file in the path, this flag will not work and the operation will return error.  While copying or moving, 'ensure' option can make same operation to have 2 possible results, depending on the existence of wfsPath. (e.g. Moving to some/path from some/source with ensure canm create some/source or some/path/source. With ensurePath option, the result can be fixed to some/path/source) If client does now know the actual directory structure or has false directory structure cache, that ambiguity can be a really painful bug. 
   'removeExisting': false // Boolean | remove any existing file/dir before writing.
   'followSymbolicLinks': false, // Boolean | dereference symlinks or not
-  'noPreserveTimestamps': false, // Boolean | to change default behavior, keep mtime/atime of source files in destination
-  'filterPattern': "filterPattern_example" // String | execute copy if source matches to this regex pattern.
+  'preserveTimestamps': false // Boolean | to change default behavior, keep mtime/atime of source files in destination
 };
 
 var callback = function(error, data, response) {
@@ -66,10 +66,10 @@ Name | Type | Description  | Notes
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
  **wfsPath** | **String**| webida file system path to access. without heading /. should be placed at the end of path arguments  | 
  **srcPath** | **String**| source data path of some operations, with have heading / | 
+ **ensurePath** | **Boolean**| Create a directory if wfsPath denotes unexisting path. Unlike &#39;ensure&#39; parameter, this flag creates entire path as a directory. If there&#39;s a existing file in the path, this flag will not work and the operation will return error.  While copying or moving, &#39;ensure&#39; option can make same operation to have 2 possible results, depending on the existence of wfsPath. (e.g. Moving to some/path from some/source with ensure canm create some/source or some/path/source. With ensurePath option, the result can be fixed to some/path/source) If client does now know the actual directory structure or has false directory structure cache, that ambiguity can be a really painful bug.  | [optional] [default to false]
  **removeExisting** | **Boolean**| remove any existing file/dir before writing. | [optional] [default to false]
  **followSymbolicLinks** | **Boolean**| dereference symlinks or not | [optional] [default to false]
- **noPreserveTimestamps** | **Boolean**| to change default behavior, keep mtime/atime of source files in destination | [optional] [default to false]
- **filterPattern** | **String**| execute copy if source matches to this regex pattern. | [optional] 
+ **preserveTimestamps** | **Boolean**| to change default behavior, keep mtime/atime of source files in destination | [optional] [default to false]
 
 ### Return type
 
@@ -227,6 +227,7 @@ var wfsPath = "wfsPath_example"; // String | webida file system path to access. 
 var srcPath = "srcPath_example"; // String | source data path of some operations, with have heading /
 
 var opts = { 
+  'ensurePath': false, // Boolean | Create a directory if wfsPath denotes unexisting path. Unlike 'ensure' parameter, this flag creates entire path as a directory. If there's a existing file in the path, this flag will not work and the operation will return error.  While copying or moving, 'ensure' option can make same operation to have 2 possible results, depending on the existence of wfsPath. (e.g. Moving to some/path from some/source with ensure canm create some/source or some/path/source. With ensurePath option, the result can be fixed to some/path/source) If client does now know the actual directory structure or has false directory structure cache, that ambiguity can be a really painful bug. 
   'removeExisting': false // Boolean | remove any existing file/dir before writing.
 };
 
@@ -247,6 +248,7 @@ Name | Type | Description  | Notes
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
  **wfsPath** | **String**| webida file system path to access. without heading /. should be placed at the end of path arguments  | 
  **srcPath** | **String**| source data path of some operations, with have heading / | 
+ **ensurePath** | **Boolean**| Create a directory if wfsPath denotes unexisting path. Unlike &#39;ensure&#39; parameter, this flag creates entire path as a directory. If there&#39;s a existing file in the path, this flag will not work and the operation will return error.  While copying or moving, &#39;ensure&#39; option can make same operation to have 2 possible results, depending on the existence of wfsPath. (e.g. Moving to some/path from some/source with ensure canm create some/source or some/path/source. With ensurePath option, the result can be fixed to some/path/source) If client does now know the actual directory structure or has false directory structure cache, that ambiguity can be a really painful bug.  | [optional] [default to false]
  **removeExisting** | **Boolean**| remove any existing file/dir before writing. | [optional] [default to false]
 
 ### Return type
@@ -344,7 +346,7 @@ var wfsId = "wfsId_example"; // String | webida file system id (same to workspac
 var wfsPath = "wfsPath_example"; // String | webida file system path to access. without heading /. should be placed at the end of path arguments 
 
 var opts = { 
-  'recursive': false // Boolean | flag to set copy with
+  'unrecursive': false // Boolean | if set, deleting non-empty directory will return error.
 };
 
 var callback = function(error, data, response) {
@@ -363,7 +365,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
  **wfsPath** | **String**| webida file system path to access. without heading /. should be placed at the end of path arguments  | 
- **recursive** | **Boolean**| flag to set copy with | [optional] [default to false]
+ **unrecursive** | **Boolean**| if set, deleting non-empty directory will return error. | [optional] [default to false]
 
 ### Return type
 
@@ -384,7 +386,7 @@ Name | Type | Description  | Notes
 
 
 
-Rename a file or directory to. This api does not overwrite existing one.
+Renames a file or directory to wfsPath. Unlike POSIX rename() call semantics, this operation does not overwrite anything. Renaming to any &#39;existing&#39; source will return error except only 1 case, with emulateMove option. 
 
 ### Example
 ```javascript
@@ -406,7 +408,8 @@ var wfsPath = "wfsPath_example"; // String | webida file system path to access. 
 var srcPath = "srcPath_example"; // String | source data path of some operations, with have heading /
 
 var opts = { 
-  'ensure': false // Boolean | flag to create all parent directories to create file or dir, like mkdir -p
+  'ensureParents': false, // Boolean | A flag to create all parent directories to create file or dir, like mkdir -p. This parameter does not create entire path, but creates to 'parent directory' of the path. 
+  'emulateMove': true // Boolean | When rename file to existing dir, move file to the dir instead of returning error. This option is provided for legacy, dummy clients only to emulate legacy server's move behaviour. Newly written client app should not use this option & use move() operation to have clear behaviour. 
 };
 
 var callback = function(error, data, response) {
@@ -426,7 +429,8 @@ Name | Type | Description  | Notes
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
  **wfsPath** | **String**| webida file system path to access. without heading /. should be placed at the end of path arguments  | 
  **srcPath** | **String**| source data path of some operations, with have heading / | 
- **ensure** | **Boolean**| flag to create all parent directories to create file or dir, like mkdir -p | [optional] [default to false]
+ **ensureParents** | **Boolean**| A flag to create all parent directories to create file or dir, like mkdir -p. This parameter does not create entire path, but creates to &#39;parent directory&#39; of the path.  | [optional] [default to false]
+ **emulateMove** | **Boolean**| When rename file to existing dir, move file to the dir instead of returning error. This option is provided for legacy, dummy clients only to emulate legacy server&#39;s move behaviour. Newly written client app should not use this option &amp; use move() operation to have clear behaviour.  | [optional] 
 
 ### Return type
 
@@ -507,7 +511,7 @@ Name | Type | Description  | Notes
 
 
 
-Creates / updates file with body data
+Creates / updates file with body data. Server should write the file in &#39;atomic&#39; manner, and should not write down request body into final destination path directly. In other words, wheather writeFile() succeeds or not, the contents of the file should not be corrupted nor half-written. 
 
 ### Example
 ```javascript
@@ -529,7 +533,7 @@ var wfsPath = "wfsPath_example"; // String | webida file system path to access. 
 var data = "/path/to/file.txt"; // File | file contents to write.
 
 var opts = { 
-  'ensure': false // Boolean | flag to create all parent directories to create file or dir, like mkdir -p
+  'ensureParents': false, // Boolean | A flag to create all parent directories to create file or dir, like mkdir -p. This parameter does not create entire path, but creates to 'parent directory' of the path. 
 };
 
 var callback = function(error, data, response) {
@@ -549,7 +553,7 @@ Name | Type | Description  | Notes
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
  **wfsPath** | **String**| webida file system path to access. without heading /. should be placed at the end of path arguments  | 
  **data** | **File**| file contents to write. | 
- **ensure** | **Boolean**| flag to create all parent directories to create file or dir, like mkdir -p | [optional] [default to false]
+ **ensureParents** | **Boolean**| A flag to create all parent directories to create file or dir, like mkdir -p. This parameter does not create entire path, but creates to &#39;parent directory&#39; of the path.  | [optional] [default to false]
 
 ### Return type
 
