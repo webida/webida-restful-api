@@ -56,7 +56,7 @@ For Windows, use bash from git-for-windows binary to run build.sh
 
 ### Editing swagger spec & templates
 
-We recommend you to use swagger-editor[swagger-editor](https://github.com/swagger-api/swagger-editor) to edit swagger file & on-the-fly validation. Always be sure that swagger.yaml is validated before building. Or, swagger-codegen-cli will produce very weird errors, hard to find why & where. Do not edit swagger.json file directly, for it's generated from yaml file by build.sh. You may need to add some host, port information in api spec for on-the-fly testing with editor UI, but it's not recommended to publish your spec with 'fixed' api endpoint url, in the view point of devops. 
+We recommend you to use swagger-editor[swagger-editor](https://github.com/swagger-api/swagger-editor) to edit swagger file & on-the-fly validation. Always be sure that swagger.yaml is validated before building. Or, swagger-codegen-cli will produce some weird errors, hard to find why & where. Do not edit swagger.json file directly, for it's generated from yaml file by build.sh. You may need to add some host, port information in api spec for on-the-fly testing with editor UI, but it's not recommended to publish your spec with 'fixed' api endpoint url, in the view point of devops. 
 
 To change package.json generated, edit template files, especially package.mustache. You also need to change
 build.sh to set codegen configurations. Since current template has some fixes on several issues, starting

@@ -154,14 +154,13 @@ paths:
   #  /file/{wfsPath} file CRUD C,U is PUT, not POST
   #    GET - read file
   #    PUT - write file
-  #    POST?{src} - rename to (supports dir too)
   #  /dir/{wfsPath} directory CRUD
   #    GET - list (read) dir
   #    PUT - create (can  be expanded to import, later)
-  #    POST?{src} - move to dir (supports file too)
   #  /any/{wfsPath}
   #    GET?{ignoreError} - stat / exists
   #    PUT?{src} - copy
+  #    POST?{src} - move
   #    DELETE - delete
   #  /ops/search/{wfsPath} for search (GET) and replace (POST)
   #  /ops/replace?{wfsPath} for search (GET) and replace (POST)
@@ -316,31 +315,6 @@ paths:
           schema:
             $ref: "#/definitions/RestError"
 
-    # move
-    post:
-      x-handler: handlers/wfs/move.js
-      tags: ["wfs"]
-      description: move file or directory to given path. works like mv -r command
-      operationId: move
-      security:
-        - webida-simple-auth: []
-      parameters:
-        - $ref: "#/parameters/wfsId"
-        - $ref: "#/parameters/wfsPath"
-        - $ref: "#/parameters/srcPath"
-        - $ref: "#/parameters/ensurePath"
-        - $ref: "#/parameters/removeExisting"
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: "#/definitions/RestOK"
-        default:
-          description: Error
-          schema:
-            $ref: "#/definitions/RestError"
-
-
   /wfs/{wfsId}/any/{wfsPath}:
     # stat
     get:
@@ -386,13 +360,19 @@ paths:
       x-handler: handlers/wfs/copy.js
       tags: ["wfs"]
       description: |
-        Copy to given path. Works like cp -r command, with some funny options. That means,
-        if destination is a directory, result will be put 'in' the directory with same base name
-        to the source.
+        Creates a copy of source to given path. Unlike cp command, wfsPath always denotes an exact
+        path of the resource to be created. So, copying a file to directory always returns error
+        and vice versa.
 
-        If removeExisting option is false, copying a directory onto a file will return error.
-        Or, destination path will be 'clobbed' before copying file, regardless wheather the path
-        is file or not.
+        this operation creates the parents dir of destination path always, and does not
+        roll-back the creation when operation failed. So, clients should roll-back if needed.
+
+        When destination path exists already,
+        1) copying file to file : follows noOverwrite flag. (does not return error)
+        2) copying file to dir : returns 409 error
+        3) copying dir to file : returns 409 error
+        4) copying dir to dir : merge srcPath/* to wfsPath, following noOverwite flag.
+
       operationId: copy
       security:
         - webida-simple-auth: []
@@ -400,20 +380,55 @@ paths:
         - $ref: "#/parameters/wfsId"
         - $ref: "#/parameters/wfsPath"
         - $ref: "#/parameters/srcPath"
-        - $ref: "#/parameters/ensurePath"
-        - $ref: "#/parameters/removeExisting"
+        - $ref: "#/parameters/noOverwrite"
         - name: followSymbolicLinks
           in: query
-          description: dereference symlinks or not
+          description: dereference symlinks in source.
           required: false
           type: boolean
           default: false
         - name: preserveTimestamps
           in: query
-          description: to change default behavior, keep mtime/atime of source files in destination
+          description: keep mtime/atime of source file(s) in destination.
           required: false
           type: boolean
           default: false
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/RestOK"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    # move
+    post:
+      x-handler: handlers/wfs/move.js
+      tags: ["wfs"]
+      description: |
+        Moves source resource to given path. Unlike mv command, wfsPath always denotes an exact
+        path of the resource to be created. So, moving a file to existing directory always
+        returns error and vice versa. (So, This API works like 'rename' rather than 'mv' command)
+
+        Like copy(), this operation creates parent path of destination, and does not roll-back
+        when operation failes.
+
+        When destination path exists already,
+        1) moving file to file : follows noOverwrite flag.
+        2) moving file to dir : returns 409 error
+        3) moving dir to file : returns 409 error
+        4) moving dir to dir : merge srcPath/* to wfsPath, following noOverwite flag.
+
+      operationId: move
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/wfsId"
+        - $ref: "#/parameters/wfsPath"
+        - $ref: "#/parameters/srcPath"
+        - $ref: "#/parameters/noOverwrite"
       responses:
         "200":
           description: OK
@@ -1021,27 +1036,10 @@ parameters:
     required: false
     default: false
 
-  ensurePath:
-    name: ensurePath
+  noOverwrite:
+    name: noOverwrite
     in: query
-    description: |
-      Create a directory if wfsPath denotes unexisting path. Unlike 'ensure' parameter, this flag
-      creates entire path as a directory. If there's a existing file in the path, this flag will
-      not work and the operation will return error.
-
-      While copying or moving, 'ensure' option can make same operation to have 2 possible results,
-      depending on the existence of wfsPath. (e.g. Moving to some/path from some/source
-      with ensure canm create some/source or some/path/source. With ensurePath option, the result
-      can be fixed to some/path/source) If client does now know the actual directory structure or
-      has false directory structure cache, that ambiguity can be a really painful bug.
-    type: boolean
-    required: false
-    default: false
-
-  removeExisting:
-    name: removeExisting
-    in: query
-    description: remove any existing file/dir before writing.
+    description: does not overwrites any existing file while copying or moving
     required: false
     type: boolean
     default: false

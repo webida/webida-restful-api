@@ -7,7 +7,7 @@ Method | HTTP request | Description
 [**copy**](WfsApi.md#copy) | **PUT** /wfs/{wfsId}/any/{wfsPath} | 
 [**createDir**](WfsApi.md#createDir) | **PUT** /wfs/{wfsId}/dir/{wfsPath} | 
 [**dirTree**](WfsApi.md#dirTree) | **GET** /wfs/{wfsId}/dir/{wfsPath} | 
-[**move**](WfsApi.md#move) | **POST** /wfs/{wfsId}/dir/{wfsPath} | 
+[**move**](WfsApi.md#move) | **POST** /wfs/{wfsId}/any/{wfsPath} | 
 [**readFile**](WfsApi.md#readFile) | **GET** /wfs/{wfsId}/file/{wfsPath} | 
 [**remove**](WfsApi.md#remove) | **DELETE** /wfs/{wfsId}/any/{wfsPath} | 
 [**rename**](WfsApi.md#rename) | **POST** /wfs/{wfsId}/file/{wfsPath} | 
@@ -21,7 +21,7 @@ Method | HTTP request | Description
 
 
 
-Copy to given path. Works like cp -r command, with some funny options. That means, if destination is a directory, result will be put &#39;in&#39; the directory with same base name to the source.  If removeExisting option is false, copying a directory onto a file will return error. Or, destination path will be &#39;clobbed&#39; before copying file, regardless wheather the path is file or not. 
+Creates a copy of source to given path. Unlike cp command, wfsPath always denotes an exact path of the resource to be created. So, copying a file to directory always returns error and vice versa.  this operation creates the parents dir of destination path always, and does not roll-back the creation when operation failed. So, clients should roll-back if needed.  When destination path exists already, 1) copying file to file : follows noOverwrite flag. (does not return error) 2) copying file to dir : returns 409 error 3) copying dir to file : returns 409 error 4) copying dir to dir : merge srcPath/_* to wfsPath, following noOverwite flag. 
 
 ### Example
 ```javascript
@@ -43,10 +43,9 @@ var wfsPath = "wfsPath_example"; // String | webida file system path to access. 
 var srcPath = "srcPath_example"; // String | source data path of some operations, with have heading /
 
 var opts = { 
-  'ensurePath': false, // Boolean | Create a directory if wfsPath denotes unexisting path. Unlike 'ensure' parameter, this flag creates entire path as a directory. If there's a existing file in the path, this flag will not work and the operation will return error.  While copying or moving, 'ensure' option can make same operation to have 2 possible results, depending on the existence of wfsPath. (e.g. Moving to some/path from some/source with ensure canm create some/source or some/path/source. With ensurePath option, the result can be fixed to some/path/source) If client does now know the actual directory structure or has false directory structure cache, that ambiguity can be a really painful bug. 
-  'removeExisting': false // Boolean | remove any existing file/dir before writing.
-  'followSymbolicLinks': false, // Boolean | dereference symlinks or not
-  'preserveTimestamps': false // Boolean | to change default behavior, keep mtime/atime of source files in destination
+  'noOverwrite': false // Boolean | does not overwrites any existing file while copying or moving
+  'followSymbolicLinks': false, // Boolean | dereference symlinks in source.
+  'preserveTimestamps': false // Boolean | keep mtime/atime of source file(s) in destination.
 };
 
 var callback = function(error, data, response) {
@@ -66,10 +65,9 @@ Name | Type | Description  | Notes
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
  **wfsPath** | **String**| webida file system path to access. without heading /. should be placed at the end of path arguments  | 
  **srcPath** | **String**| source data path of some operations, with have heading / | 
- **ensurePath** | **Boolean**| Create a directory if wfsPath denotes unexisting path. Unlike &#39;ensure&#39; parameter, this flag creates entire path as a directory. If there&#39;s a existing file in the path, this flag will not work and the operation will return error.  While copying or moving, &#39;ensure&#39; option can make same operation to have 2 possible results, depending on the existence of wfsPath. (e.g. Moving to some/path from some/source with ensure canm create some/source or some/path/source. With ensurePath option, the result can be fixed to some/path/source) If client does now know the actual directory structure or has false directory structure cache, that ambiguity can be a really painful bug.  | [optional] [default to false]
- **removeExisting** | **Boolean**| remove any existing file/dir before writing. | [optional] [default to false]
- **followSymbolicLinks** | **Boolean**| dereference symlinks or not | [optional] [default to false]
- **preserveTimestamps** | **Boolean**| to change default behavior, keep mtime/atime of source files in destination | [optional] [default to false]
+ **noOverwrite** | **Boolean**| does not overwrites any existing file while copying or moving | [optional] [default to false]
+ **followSymbolicLinks** | **Boolean**| dereference symlinks in source. | [optional] [default to false]
+ **preserveTimestamps** | **Boolean**| keep mtime/atime of source file(s) in destination. | [optional] [default to false]
 
 ### Return type
 
@@ -205,7 +203,7 @@ Name | Type | Description  | Notes
 
 
 
-move file or directory to given path. works like mv -r command
+Moves source resource to given path. Unlike mv command, wfsPath always denotes an exact path of the resource to be created. So, moving a file to existing directory always returns error and vice versa. (So, This API works like &#39;rename&#39; rather than &#39;mv&#39; command)  Like copy(), this operation creates parent path of destination, and does not roll-back when operation failes.  When destination path exists already, 1) moving file to file : follows noOverwrite flag. 2) moving file to dir : returns 409 error 3) moving dir to file : returns 409 error 4) moving dir to dir : merge srcPath/_* to wfsPath, following noOverwite flag. 
 
 ### Example
 ```javascript
@@ -227,8 +225,7 @@ var wfsPath = "wfsPath_example"; // String | webida file system path to access. 
 var srcPath = "srcPath_example"; // String | source data path of some operations, with have heading /
 
 var opts = { 
-  'ensurePath': false, // Boolean | Create a directory if wfsPath denotes unexisting path. Unlike 'ensure' parameter, this flag creates entire path as a directory. If there's a existing file in the path, this flag will not work and the operation will return error.  While copying or moving, 'ensure' option can make same operation to have 2 possible results, depending on the existence of wfsPath. (e.g. Moving to some/path from some/source with ensure canm create some/source or some/path/source. With ensurePath option, the result can be fixed to some/path/source) If client does now know the actual directory structure or has false directory structure cache, that ambiguity can be a really painful bug. 
-  'removeExisting': false // Boolean | remove any existing file/dir before writing.
+  'noOverwrite': false // Boolean | does not overwrites any existing file while copying or moving
 };
 
 var callback = function(error, data, response) {
@@ -248,8 +245,7 @@ Name | Type | Description  | Notes
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
  **wfsPath** | **String**| webida file system path to access. without heading /. should be placed at the end of path arguments  | 
  **srcPath** | **String**| source data path of some operations, with have heading / | 
- **ensurePath** | **Boolean**| Create a directory if wfsPath denotes unexisting path. Unlike &#39;ensure&#39; parameter, this flag creates entire path as a directory. If there&#39;s a existing file in the path, this flag will not work and the operation will return error.  While copying or moving, &#39;ensure&#39; option can make same operation to have 2 possible results, depending on the existence of wfsPath. (e.g. Moving to some/path from some/source with ensure canm create some/source or some/path/source. With ensurePath option, the result can be fixed to some/path/source) If client does now know the actual directory structure or has false directory structure cache, that ambiguity can be a really painful bug.  | [optional] [default to false]
- **removeExisting** | **Boolean**| remove any existing file/dir before writing. | [optional] [default to false]
+ **noOverwrite** | **Boolean**| does not overwrites any existing file while copying or moving | [optional] [default to false]
 
 ### Return type
 

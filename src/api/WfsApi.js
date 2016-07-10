@@ -65,15 +65,14 @@
      */
 
     /**
-     * Copy to given path. Works like cp -r command, with some funny options. That means, if destination is a directory, result will be put &#39;in&#39; the directory with same base name to the source.  If removeExisting option is false, copying a directory onto a file will return error. Or, destination path will be &#39;clobbed&#39; before copying file, regardless wheather the path is file or not. 
+     * Creates a copy of source to given path. Unlike cp command, wfsPath always denotes an exact path of the resource to be created. So, copying a file to directory always returns error and vice versa.  this operation creates the parents dir of destination path always, and does not roll-back the creation when operation failed. So, clients should roll-back if needed.  When destination path exists already, 1) copying file to file : follows noOverwrite flag. (does not return error) 2) copying file to dir : returns 409 error 3) copying dir to file : returns 409 error 4) copying dir to dir : merge srcPath/_* to wfsPath, following noOverwite flag. 
      * @param {String} wfsId webida file system id (same to workspace id) to access.
      * @param {String} wfsPath webida file system path to access. without heading /. should be placed at the end of path arguments 
      * @param {String} srcPath source data path of some operations, with have heading /
      * @param {Object} opts Optional parameters
-     * @param {Boolean} opts.ensurePath Create a directory if wfsPath denotes unexisting path. Unlike &#39;ensure&#39; parameter, this flag creates entire path as a directory. If there&#39;s a existing file in the path, this flag will not work and the operation will return error.  While copying or moving, &#39;ensure&#39; option can make same operation to have 2 possible results, depending on the existence of wfsPath. (e.g. Moving to some/path from some/source with ensure canm create some/source or some/path/source. With ensurePath option, the result can be fixed to some/path/source) If client does now know the actual directory structure or has false directory structure cache, that ambiguity can be a really painful bug.  (default to false)
-     * @param {Boolean} opts.removeExisting remove any existing file/dir before writing. (default to false)
-     * @param {Boolean} opts.followSymbolicLinks dereference symlinks or not (default to false)
-     * @param {Boolean} opts.preserveTimestamps to change default behavior, keep mtime/atime of source files in destination (default to false)
+     * @param {Boolean} opts.noOverwrite does not overwrites any existing file while copying or moving (default to false)
+     * @param {Boolean} opts.followSymbolicLinks dereference symlinks in source. (default to false)
+     * @param {Boolean} opts.preserveTimestamps keep mtime/atime of source file(s) in destination. (default to false)
      * @param {module:api/WfsApi~copyCallback} callback The callback function, accepting three arguments: error, data, response
      * data is of type: {module:model/RestOK}
      */
@@ -103,8 +102,7 @@
       };
       var queryParams = {
         'srcPath': srcPath,
-        'ensurePath': opts['ensurePath'],
-        'removeExisting': opts['removeExisting'],
+        'noOverwrite': opts['noOverwrite'],
         'followSymbolicLinks': opts['followSymbolicLinks'],
         'preserveTimestamps': opts['preserveTimestamps']
       };
@@ -245,13 +243,12 @@
      */
 
     /**
-     * move file or directory to given path. works like mv -r command
+     * Moves source resource to given path. Unlike mv command, wfsPath always denotes an exact path of the resource to be created. So, moving a file to existing directory always returns error and vice versa. (So, This API works like &#39;rename&#39; rather than &#39;mv&#39; command)  Like copy(), this operation creates parent path of destination, and does not roll-back when operation failes.  When destination path exists already, 1) moving file to file : follows noOverwrite flag. 2) moving file to dir : returns 409 error 3) moving dir to file : returns 409 error 4) moving dir to dir : merge srcPath/_* to wfsPath, following noOverwite flag. 
      * @param {String} wfsId webida file system id (same to workspace id) to access.
      * @param {String} wfsPath webida file system path to access. without heading /. should be placed at the end of path arguments 
      * @param {String} srcPath source data path of some operations, with have heading /
      * @param {Object} opts Optional parameters
-     * @param {Boolean} opts.ensurePath Create a directory if wfsPath denotes unexisting path. Unlike &#39;ensure&#39; parameter, this flag creates entire path as a directory. If there&#39;s a existing file in the path, this flag will not work and the operation will return error.  While copying or moving, &#39;ensure&#39; option can make same operation to have 2 possible results, depending on the existence of wfsPath. (e.g. Moving to some/path from some/source with ensure canm create some/source or some/path/source. With ensurePath option, the result can be fixed to some/path/source) If client does now know the actual directory structure or has false directory structure cache, that ambiguity can be a really painful bug.  (default to false)
-     * @param {Boolean} opts.removeExisting remove any existing file/dir before writing. (default to false)
+     * @param {Boolean} opts.noOverwrite does not overwrites any existing file while copying or moving (default to false)
      * @param {module:api/WfsApi~moveCallback} callback The callback function, accepting three arguments: error, data, response
      * data is of type: {module:model/RestOK}
      */
@@ -281,8 +278,7 @@
       };
       var queryParams = {
         'srcPath': srcPath,
-        'ensurePath': opts['ensurePath'],
-        'removeExisting': opts['removeExisting']
+        'noOverwrite': opts['noOverwrite']
       };
       var headerParams = {
       };
@@ -295,7 +291,7 @@
       var returnType = RestOK;
 
       return this.apiClient.callApi(
-        '/wfs/{wfsId}/dir/{wfsPath}', 'POST',
+        '/wfs/{wfsId}/any/{wfsPath}', 'POST',
         pathParams, queryParams, headerParams, formParams, postBody,
         authNames, contentTypes, accepts, returnType, callback
       );
