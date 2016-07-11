@@ -55,7 +55,7 @@
    * @class
    * @param id {String} the id of a session. usually same to socket id.
    * @param name {String} human readable name, usually derived from workspace name.
-   * @param state {module:model/Session.StateEnum} state of this session  NORMAL = connected, normally working  LOSING = disconnected, waiting reconnection. still accessible with api  CLOSING = socket connection will close connection by server (clinet will be notified)  there\"s no \"CLOSED\" / \"LOST\" state, for server will remove session object in registry when the server closes connection or stops waiting for reconnection for timeout. 
+   * @param state {module:model/Session.StateEnum} state of this session NORMAL = connected, normally working LOSING = disconnected, waiting reconnection. still accessible with api CLOSING = socket connection will close connection by server (clinet will be notified) there\"s no \"CLOSED\" / \"LOST\" state, for server will remove session object in registry when the server closes connection or stops waiting for reconnection for timeout. 
    * @param clientAddress {String} the peer address of session connection. not always
    * @param connectedAt {Date} the time when socket connection is established
    * @param disconnectedAt {Date} the time when socket is closed.
@@ -127,7 +127,7 @@
    */
   exports.prototype['name'] = undefined;
   /**
-   * state of this session  NORMAL = connected, normally working  LOSING = disconnected, waiting reconnection. still accessible with api  CLOSING = socket connection will close connection by server (clinet will be notified)  there\"s no \"CLOSED\" / \"LOST\" state, for server will remove session object in registry when the server closes connection or stops waiting for reconnection for timeout. 
+   * state of this session NORMAL = connected, normally working LOSING = disconnected, waiting reconnection. still accessible with api CLOSING = socket connection will close connection by server (clinet will be notified) there\"s no \"CLOSED\" / \"LOST\" state, for server will remove session object in registry when the server closes connection or stops waiting for reconnection for timeout. 
    * @member {module:model/Session.StateEnum} state
    */
   exports.prototype['state'] = undefined;

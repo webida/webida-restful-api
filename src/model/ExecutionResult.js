@@ -53,14 +53,13 @@
    * execution response
    * @alias module:model/ExecutionResult
    * @class
-   * @param exitCode {Integer} exit code of child process.
    * @param stdout {String} standard out of child process.
    * @param stderr {String} standard error of child process.
    */
-  var exports = function(exitCode, stdout, stderr) {
+  var exports = function(stdout, stderr) {
     var _this = this;
 
-    _this['exitCode'] = exitCode;
+
     _this['stdout'] = stdout;
     _this['stderr'] = stderr;
   };
@@ -76,8 +75,8 @@
     if (data) {
       obj = obj || new exports();
 
-      if (data.hasOwnProperty('exitCode')) {
-        obj['exitCode'] = ApiClient.convertToType(data['exitCode'], 'Integer');
+      if (data.hasOwnProperty('error')) {
+        obj['error'] = ApiClient.convertToType(data['error'], 'String');
       }
       if (data.hasOwnProperty('stdout')) {
         obj['stdout'] = ApiClient.convertToType(data['stdout'], 'String');
@@ -90,10 +89,10 @@
   }
 
   /**
-   * exit code of child process.
-   * @member {Integer} exitCode
+   * error message when execution failed.
+   * @member {String} error
    */
-  exports.prototype['exitCode'] = undefined;
+  exports.prototype['error'] = undefined;
   /**
    * standard out of child process.
    * @member {String} stdout

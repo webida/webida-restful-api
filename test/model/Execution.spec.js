@@ -89,14 +89,14 @@
       //expect(instance).to.be();
     });
 
-    it('should have the property input (base name: "input")', function() {
-      // uncomment below and update the code to test the property input
+    it('should have the property timeout (base name: "timeout")', function() {
+      // uncomment below and update the code to test the property timeout
       //var instane = new WebidaRestfulApi.Execution();
       //expect(instance).to.be();
     });
 
-    it('should have the property timeout (base name: "timeout")', function() {
-      // uncomment below and update the code to test the property timeout
+    it('should have the property maxBuffer (base name: "maxBuffer")', function() {
+      // uncomment below and update the code to test the property maxBuffer
       //var instane = new WebidaRestfulApi.Execution();
       //expect(instance).to.be();
     });

@@ -83,8 +83,14 @@
       //expect(instance).to.be();
     });
 
-    it('should have the property executionId (base name: "executionId")', function() {
-      // uncomment below and update the code to test the property executionId
+    it('should have the property execId (base name: "execId")', function() {
+      // uncomment below and update the code to test the property execId
+      //var instane = new WebidaRestfulApi.ChildProcess();
+      //expect(instance).to.be();
+    });
+
+    it('should have the property state (base name: "state")', function() {
+      // uncomment below and update the code to test the property state
       //var instane = new WebidaRestfulApi.ChildProcess();
       //expect(instance).to.be();
     });
@@ -95,8 +101,14 @@
       //expect(instance).to.be();
     });
 
-    it('should have the property background (base name: "background")', function() {
-      // uncomment below and update the code to test the property background
+    it('should have the property exitCode (base name: "exitCode")', function() {
+      // uncomment below and update the code to test the property exitCode
+      //var instane = new WebidaRestfulApi.ChildProcess();
+      //expect(instance).to.be();
+    });
+
+    it('should have the property exitSignal (base name: "exitSignal")', function() {
+      // uncomment below and update the code to test the property exitSignal
       //var instane = new WebidaRestfulApi.ChildProcess();
       //expect(instance).to.be();
     });

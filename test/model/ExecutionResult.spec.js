@@ -65,8 +65,8 @@
       //expect(instance).to.be.a(WebidaRestfulApi.ExecutionResult);
     });
 
-    it('should have the property exitCode (base name: "exitCode")', function() {
-      // uncomment below and update the code to test the property exitCode
+    it('should have the property error (base name: "error")', function() {
+      // uncomment below and update the code to test the property error
       //var instane = new WebidaRestfulApi.ExecutionResult();
       //expect(instance).to.be();
     });

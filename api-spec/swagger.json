@@ -979,8 +979,8 @@
     "/workspaces/{workspaceId}/exec" : {
       "get" : {
         "tags" : [ "workspace" ],
-        "description" : "get all spawned process info, created by exec api, on given workspace. set workspace id to\n\"*\" to all processes info. This operation requires proper access rights (unrestricted or\nmatching workspace id in access token with parameter)\n",
-        "operationId" : "getChildProcs",
+        "description" : "Gets process info, created by async exec request, on this workspace. If execId is set,\nthis op finds a spawned process whose id is matching. If not, all spawned procs will be\nfound. This op does not returns error when no procs found but empty result array.\n\nThis operation requires proper access rights. (unrestricted or matching workspace id in\naccess token with parameter)\n",
+        "operationId" : "findProcs",
         "parameters" : [ {
           "name" : "workspaceId",
           "in" : "path",
@@ -988,16 +988,15 @@
           "required" : true,
           "type" : "string"
         }, {
-          "name" : "includeExec",
+          "name" : "execId",
           "in" : "query",
-          "description" : "include processes created by synchronous exec request",
+          "description" : "the id of execution request(different from pid!)",
           "required" : false,
-          "type" : "boolean",
-          "default" : false
+          "type" : "string"
         } ],
         "responses" : {
           "200" : {
-            "description" : "execution result with all captured standard ouput and error",
+            "description" : "the child processes found. result does not include 'exited' procs.",
             "schema" : {
               "type" : "array",
               "items" : {
@@ -1012,11 +1011,11 @@
             }
           }
         },
-        "x-handler" : "handlers/workspace/getChildProcs.js"
+        "x-handler" : "handlers/workspace/findProcs.js"
       },
       "post" : {
         "tags" : [ "workspace" ],
-        "description" : "execute a shell command on this workspace",
+        "description" : "execute a shell command on this workspace. requires proper access rights.",
         "operationId" : "exec",
         "parameters" : [ {
           "name" : "workspaceId",
@@ -1027,7 +1026,7 @@
         }, {
           "name" : "async",
           "in" : "query",
-          "description" : "Spawn a child process for given command and returns a child process info only. ,\nActual output (stream of message) will be delivered to web socket channel, with\nroom id /sessions/asyn-{Execution#id}\n",
+          "description" : "Spawn a child process for given command and returns the created child proc info.\nActual output (stream of message) will be delivered to web socket channel, with\nroom id /sessions/async-{execId}\n",
           "required" : false,
           "type" : "boolean",
           "default" : false
@@ -1041,13 +1040,13 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "execution result with all captured standard ouput and error",
+            "description" : "Execution result with all captured standard ouput and error. If execution is completed\nwithout error, cancelesponse#error should be a falsy value. If some error has happened,\nthen ExecutionResult#error (and #stderr, optionally) should be set. For other cases\n(e.g. insufficient/invalid arguments), normal RestError should be returned with 4xx\nor 5xx error code. client-side callback should distinguish from execution error from\nplain RestError.\n",
             "schema" : {
               "$ref" : "#/definitions/ExecutionResult"
             }
           },
           "201" : {
-            "description" : "spawned process infomation created by async execution",
+            "description" : "spawned process infomation created by async execution. If server could not create\na child process, error event will be sent to client via socket channel but RestError\nwill not be ruturned from this operation. When a client has got 'error' event from\nthe socket channel, the client should close the channel wheather it receives subsequent\nexit event or not (with some proper timeout if needed). Server should not send the\nerrors related to 'killing' child processes\n",
             "schema" : {
               "$ref" : "#/definitions/ChildProcess"
             }
@@ -1066,7 +1065,7 @@
       },
       "delete" : {
         "tags" : [ "workspace" ],
-        "description" : "cancels an execution, if possible. Killing process may not be graceful.",
+        "description" : "cancels an execution, if possible. Killing process may not be graceful. requires proper\naccess rights. if execId is not specified, this api does nothing.\n",
         "operationId" : "cancel",
         "parameters" : [ {
           "name" : "workspaceId",
@@ -1077,125 +1076,13 @@
         }, {
           "name" : "execId",
           "in" : "query",
-          "description" : "the id of execution (different from pid!)",
+          "description" : "the id of execution request(different from pid!)",
           "required" : false,
           "type" : "string"
         } ],
         "responses" : {
           "200" : {
             "description" : "OK",
-            "schema" : {
-              "$ref" : "#/definitions/RestOK"
-            }
-          },
-          "default" : {
-            "description" : "Error",
-            "schema" : {
-              "$ref" : "#/definitions/RestError"
-            }
-          }
-        },
-        "security" : [ {
-          "webida-simple-auth" : [ ]
-        } ]
-      }
-    },
-    "/workspaces/{workspaceId}/metadata/{objectPath}" : {
-      "get" : {
-        "tags" : [ "workspace" ],
-        "description" : "read a metadata file from a workspace.",
-        "operationId" : "readMetadata",
-        "parameters" : [ {
-          "name" : "workspaceId",
-          "in" : "path",
-          "description" : "webida workspace id (usually same to file system id, wfsId)",
-          "required" : true,
-          "type" : "string"
-        }, {
-          "name" : "objectPath",
-          "in" : "path",
-          "description" : "the path (filename without .json) of metadata, without heading /",
-          "required" : true,
-          "type" : "string"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "the metadata file contents at given path",
-            "schema" : {
-              "type" : "file"
-            }
-          },
-          "default" : {
-            "description" : "Error",
-            "schema" : {
-              "$ref" : "#/definitions/RestError"
-            }
-          }
-        },
-        "x-handler" : "handlers/workspace/readMetadata.js"
-      },
-      "put" : {
-        "tags" : [ "workspace" ],
-        "description" : "write a metadata file at given path. missing parents will be created.",
-        "operationId" : "writeMetadata",
-        "parameters" : [ {
-          "name" : "workspaceId",
-          "in" : "path",
-          "description" : "webida workspace id (usually same to file system id, wfsId)",
-          "required" : true,
-          "type" : "string"
-        }, {
-          "name" : "objectPath",
-          "in" : "path",
-          "description" : "the path (filename without .json) of metadata, without heading /",
-          "required" : true,
-          "type" : "string"
-        }, {
-          "name" : "data",
-          "in" : "formData",
-          "description" : "file contents to write.",
-          "required" : true,
-          "type" : "file"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK. saved.",
-            "schema" : {
-              "$ref" : "#/definitions/RestOK"
-            }
-          },
-          "default" : {
-            "description" : "Error",
-            "schema" : {
-              "$ref" : "#/definitions/RestError"
-            }
-          }
-        },
-        "security" : [ {
-          "webida-simple-auth" : [ ]
-        } ],
-        "x-handler" : "handlers/workspace/writeMetadata.js"
-      },
-      "delete" : {
-        "tags" : [ "workspace" ],
-        "description" : "delete metadata of given path",
-        "operationId" : "removeMetadata",
-        "parameters" : [ {
-          "name" : "workspaceId",
-          "in" : "path",
-          "description" : "webida workspace id (usually same to file system id, wfsId)",
-          "required" : true,
-          "type" : "string"
-        }, {
-          "name" : "objectPath",
-          "in" : "path",
-          "description" : "the path (filename without .json) of metadata, without heading /",
-          "required" : true,
-          "type" : "string"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK. removed",
             "schema" : {
               "$ref" : "#/definitions/RestOK"
             }
@@ -1457,7 +1344,7 @@
         },
         "state" : {
           "type" : "string",
-          "description" : "state of this session\n\nNORMAL = connected, normally working\n\nLOSING = disconnected, waiting reconnection. still accessible with api\n\nCLOSING = socket connection will close connection by server (clinet will be notified)\n\nthere\"s no \"CLOSED\" / \"LOST\" state, for server will remove session object in registry\nwhen the server closes connection or stops waiting for reconnection for timeout.\n",
+          "description" : "state of this session\nNORMAL = connected, normally working\nLOSING = disconnected, waiting reconnection. still accessible with api\nCLOSING = socket connection will close connection by server (clinet will be notified)\nthere\"s no \"CLOSED\" / \"LOST\" state, for server will remove session object in registry\nwhen the server closes connection or stops waiting for reconnection for timeout.\n",
           "enum" : [ "NORMAL", "LOSING", "CLOSING" ]
         },
         "workspaceId" : {
@@ -1497,41 +1384,41 @@
       "properties" : {
         "id" : {
           "type" : "string",
-          "description" : "unique identifier of execution, to demux response stream or cancel request.\nasync exec request should have id, always. For synchronous execution, missing\nid will be generated by server with random string & timestamp.\n"
+          "description" : "unique identifier of execution, to demux response stream or cancel request.\nServer should reject an async exec request without id.\n"
         },
         "command" : {
           "type" : "string",
-          "description" : "command to run. should not contain any arguments, pipes, redirections\n"
+          "description" : "The command to run. Server may not support pipe, redirection nor shell variables in\ncommand. Client should not assume any 'specific shell' in server and should not\nusing the shell features for portability.\n\nIn windows system with unix sh (e.g. cygwin or mingw from git-for-windows), usually\na shell script in PATH may work as command but probably allocates console window while\nrunning the command. Implementations (both of server & client) should avoid allocating\nadditional console device while running service for costs and UX,  and should provide\na portable way to invoke commands. Shortly, when a service/product embeds some\n'.sh' file to run, it must provide '.cmd' file doing same thing, always.\n"
         },
         "args" : {
           "type" : "array",
-          "description" : "the arguments array",
+          "description" : "the arguments array. Server can join this args to command with proper white-space char,\nwhen underlying platform api (e.g. child_process#exec() in node.js) does not support\nadditional arguments vector. It's recommended to use args vector than making a long\ncommand, to find & see child processes easily with this Rest API. So, args should be\nalways provided, even empty array.\n\nWhen some arguments has a white space (e.g. C:\\Program Files\\webida), usually invoking\ncommand understands escaping or quotation, but not always. Client should add proper\nescaping or quotation chars to args vector manually. server should not change any\ncommand or arguments.\n",
           "items" : {
             "type" : "string"
           }
         },
         "cwd" : {
           "type" : "string",
-          "description" : "Current working directory of spawned process, relative to workspace root. If abscent,\ncwd will be the workspace root directory. Does not accept any evaluatable form like\n$HOME, %USERPROFILE%. As wfs operations, path should be unixified. But, unlikely,\nwhile the wfs operations cut heading \"/\" in path with URI normlization, this operation\ndoes not convert path to relateive and returns error for the argument.\n"
-        },
-        "input" : {
-          "type" : "string",
-          "description" : "input string for child process. if falsy, no input will be available to child.\n(interactive execution via websocket is not supported for most of such processes\n requires tty, not standard i/o)\n"
+          "description" : "Current working directory of spawned process, relative to workspace root. If abscent,\ncwd will be the workspace directory. Does not accept any evaluatable form like\n$HOME, %USERPROFILE%. path should be unixified. Server may reject an 'absolute'\nproperty.\n"
         },
         "timeout" : {
           "type" : "integer",
-          "description" : "The value which In \"milliseconds\" the maximum amount of time the child is allowed\nto run. (not idle time of stdout / stderr stream) if undefined, server sets default\ntimeout value 5 min to synchronous execution requests. If request specifies async\nexecution and sets this value to falsy, server should not kill the child process until\n  1) The process exists by self\n  2) cancel operation is invoked by api request\n  3) The workspace executing the process is removed by api request\n  4) Server Stops\nTerminiating any \"too-long-lived\" child process are not graceful, as cancel() is.\n"
+          "description" : "The value which In 'miliseconds' the maximum amount of time the child is allowed\nto run. (not idle time of stdout / stderr stream) for sync exec. Server should not\napply default value for async exec, when omitted. The child process spawned by async\nexecution should be killed when\n 1) server goes down\n 2) process exits by self\n 3) cancel operation is invoked\n"
+        },
+        "maxBuffer" : {
+          "type" : "integer",
+          "description" : "Largest amount of data (in bytes) allowed on stdout or stderr for sync exec. Server\nshould not apply this limit to async execution. In sync exec, server may kill a\nchild process that has exceeded limit. default value is 512KB, large enough.\n"
         }
       },
-      "description" : "execution request, simlilar to node.js spawn(). see node.js documentation for\ndetails of each properties. some properties are not configurable for portability\n   - encoding : fixed to utf-8\n   - shell : fixed to system default. Using shell variables in command may not work.\n   - killSignal : fixed to SIGTERM. If process does not die, server can send SIGKILL or\n                  invoke taskkill to ensure chlid process is killed.\n   - uid & gid : will not be set for security\n   - stdio : all streams are handled by server. no options are avaliable to client.\n   - shell : always false.\n   - detached : always false\n"
+      "description" : "execution request, simlilar to node.js exec()/spawn(). see node.js documentation for\ndetails of each properties. some properties are not configurable for portability\n   - encoding : fixed to utf-8\n   - shell : fixed to system defaults. (so, cmd.exe will be invoked in Windows OS, not sh\n            or bash in git-for-windows even they are available.)\n   - killSignal : fixed to SIGTERM. If process does not die, server can send SIGKILL or\n                  invoke taskkill, to ensure chlid process is killed.\n   - uid & gid : will not be set for security\n   - stdio : all streams are handled by server. no options are avaliable to client.\n   - detached : always false\n"
     },
     "ExecutionResult" : {
       "type" : "object",
-      "required" : [ "exitCode", "stderr", "stdout" ],
+      "required" : [ "stderr", "stdout" ],
       "properties" : {
-        "exitCode" : {
-          "type" : "integer",
-          "description" : "exit code of child process."
+        "error" : {
+          "type" : "string",
+          "description" : "error message when execution failed."
         },
         "stdout" : {
           "type" : "string",
@@ -1546,7 +1433,7 @@
     },
     "ChildProcess" : {
       "type" : "object",
-      "required" : [ "args", "background", "command", "executionId", "pid", "startedAt" ],
+      "required" : [ "args", "command", "execId", "pid", "startedAt", "state" ],
       "properties" : {
         "pid" : {
           "type" : "integer",
@@ -1554,33 +1441,39 @@
         },
         "command" : {
           "type" : "string",
-          "description" : "the execution command in Execution request"
+          "description" : "execution command in execution request"
         },
         "args" : {
           "type" : "array",
-          "description" : "arguments of the command in Execution request",
+          "description" : "arguments of command in execution request",
           "items" : {
             "type" : "string"
           }
         },
-        "executionId" : {
+        "execId" : {
           "type" : "string",
-          "description" : "execution id from Execution request"
+          "description" : "execution id from execution request"
+        },
+        "state" : {
+          "type" : "string",
+          "description" : "state of process. Where\n  CREATED - process is just created. no event has arrived yet\n  WORKING - some output on stdout/stderr is arrived\n  KILLING - sent kill signal, by cancel operation or error event from the process\n  EXITED  - process has exited.\n",
+          "enum" : [ "CREATED", "WORKING", "KILLING", "EXITED" ]
         },
         "startedAt" : {
           "type" : "string",
           "format" : "date-time",
           "description" : "the time when this process is spawned"
         },
-        "background" : {
-          "type" : "array",
-          "description" : "true when this process is spawned by asynchronous exec request or some other ways to\nspawn processes in server. fasle when this process is spawened with plain, synchronous\nexecution request.\n",
-          "items" : {
-            "type" : "string"
-          }
+        "exitCode" : {
+          "type" : "integer",
+          "description" : "the exit code of child process. available with EXITED procs only."
+        },
+        "exitSignal" : {
+          "type" : "string",
+          "description" : "the signal that killed this child process.(not always available)"
         }
       },
-      "description" : "a process in execution"
+      "description" : "a process in execution, spawned by async exec or other mean"
     }
   },
   "parameters" : {
@@ -1655,11 +1548,11 @@
       "required" : true,
       "type" : "string"
     },
-    "objectPath" : {
-      "name" : "objectPath",
-      "in" : "path",
-      "description" : "the path (filename without .json) of metadata, without heading /",
-      "required" : true,
+    "execId" : {
+      "name" : "execId",
+      "in" : "query",
+      "description" : "the id of execution request(different from pid!)",
+      "required" : false,
       "type" : "string"
     },
     "sessionId" : {
