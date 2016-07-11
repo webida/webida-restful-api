@@ -21,7 +21,7 @@
 swagger: "2.0"
 
 info:
-  version: "0.3.0"
+  version: "0.5.0"
   title: Webida Restful API
   description: Restful API for Webida clients to use server's data & features
   license:
