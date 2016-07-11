@@ -4,10 +4,27 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **pid** | **Integer** | child process pid | 
-**command** | **String** | the execution command in Execution request | 
-**args** | **[String]** | arguments of the command in Execution request | 
-**executionId** | **String** | execution id from Execution request | 
+**command** | **String** | execution command in execution request | 
+**args** | **[String]** | arguments of command in execution request | 
+**execId** | **String** | execution id from execution request | 
+**state** | **String** | state of process. Where   CREATED - process is just created. no event has arrived yet   WORKING - some output on stdout/stderr is arrived   KILLING - sent kill signal, by cancel operation or error event from the process   EXITED  - process has exited.  | 
 **startedAt** | **Date** | the time when this process is spawned | 
-**background** | **[String]** | true when this process is spawned by asynchronous exec request or some other ways to spawn processes in server. fasle when this process is spawened with plain, synchronous execution request.  | 
+**exitCode** | **Integer** | the exit code of child process. available with EXITED procs only. | [optional] 
+**exitSignal** | **String** | the signal that killed this child process.(not always available) | [optional] 
+
+
+<a name="StateEnum"></a>
+## Enum: StateEnum
+
+
+* `CREATED` (value: `"CREATED"`)
+
+* `WORKING` (value: `"WORKING"`)
+
+* `KILLING` (value: `"KILLING"`)
+
+* `EXITED` (value: `"EXITED"`)
+
+
 
 

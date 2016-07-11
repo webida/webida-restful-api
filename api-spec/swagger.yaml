@@ -21,7 +21,7 @@
 swagger: "2.0"
 
 info:
-  version: "0.3.0"
+  version: "0.5.0"
   title: Webida Restful API
   description: Restful API for Webida clients to use server's data & features
   license:
@@ -642,24 +642,22 @@ paths:
 
     #getChildProcs
     get:
-      x-handler: handlers/workspace/getChildProcs.js
+      x-handler: handlers/workspace/findProcs.js
       tags: ["workspace"]
       description: |
-       get all spawned process info, created by exec api, on given workspace. set workspace id to
-       "*" to all processes info. This operation requires proper access rights (unrestricted or
-       matching workspace id in access token with parameter)
-      operationId: getChildProcs
+        Gets process info, created by async exec request, on this workspace. If execId is set,
+        this op finds a spawned process whose id is matching. If not, all spawned procs will be
+        found. This op does not returns error when no procs found but empty result array.
+
+        This operation requires proper access rights. (unrestricted or matching workspace id in
+        access token with parameter)
+      operationId: findProcs
       parameters:
         - $ref: "#/parameters/workspaceId"
-        - name: includeExec
-          in: query
-          description: include processes created by synchronous exec request
-          type: boolean
-          required: false
-          default: false
+        - $ref: "#/parameters/execId"
       responses:
         "200":
-          description: execution result with all captured standard ouput and error
+          description: the child processes found. result does not include 'exited' procs.
           schema:
             type: array
             items:
@@ -673,7 +671,7 @@ paths:
     post:
       x-handler: handlers/workspace/exec.js
       tags: ["workspace"]
-      description: execute a shell command on this workspace
+      description: execute a shell command on this workspace. requires proper access rights.
       operationId: exec
       security:
         - webida-simple-auth: []
@@ -682,9 +680,9 @@ paths:
         - name: async
           in: query
           description: |
-            Spawn a child process for given command and returns a child process info only. ,
+            Spawn a child process for given command and returns the created child proc info.
             Actual output (stream of message) will be delivered to web socket channel, with
-            room id /sessions/asyn-{Execution#id}
+            room id /sessions/async-{execId}
           type: boolean
           required: false
           default: false
@@ -695,13 +693,25 @@ paths:
             $ref: "#/definitions/Execution"
       responses:
         "200":
-          description: execution result with all captured standard ouput and error
+          description: |
+            Execution result with all captured standard ouput and error. If execution is completed
+            without error, cancelesponse#error should be a falsy value. If some error has happened,
+            then ExecutionResult#error (and #stderr, optionally) should be set. For other cases
+            (e.g. insufficient/invalid arguments), normal RestError should be returned with 4xx
+            or 5xx error code. client-side callback should distinguish from execution error from
+            plain RestError.
           schema:
             $ref: "#/definitions/ExecutionResult"
         "201":
-          description: spawned process infomation created by async execution
+          description: |
+            spawned process infomation created by async execution. If server could not create
+            a child process, error event will be sent to client via socket channel but RestError
+            will not be ruturned from this operation. When a client has got 'error' event from
+            the socket channel, the client should close the channel wheather it receives subsequent
+            exit event or not (with some proper timeout if needed). Server should not send the
+            errors related to 'killing' child processes
           schema:
-            $ref: "#/definitions/ChildProcess"
+            $ref: '#/definitions/ChildProcess'
         default:
           description: Error
           schema:
@@ -710,86 +720,18 @@ paths:
     #cancel
     delete:
       tags: ["workspace"]
-      description: cancels an execution, if possible. Killing process may not be graceful.
+      description: |
+        cancels an execution, if possible. Killing process may not be graceful. requires proper
+        access rights. if execId is not specified, this api does nothing.
       operationId: cancel
       security:
         - webida-simple-auth: []
       parameters:
         - $ref: "#/parameters/workspaceId"
-        - name: execId
-          in: query
-          description: the id of execution (different from pid!)
-          type: string
-          required: false
+        - $ref: "#/parameters/execId"
       responses:
         "200":
           description: OK
-          schema:
-            $ref: "#/definitions/RestOK"
-        default:
-          description: Error
-          schema:
-            $ref: "#/definitions/RestError"
-
-  /workspaces/{workspaceId}/metadata/{objectPath}:
-    #readMetadata
-    get:
-      x-handler: handlers/workspace/readMetadata.js
-      tags: ["workspace"]
-      description: read a metadata file from a workspace.
-      operationId: readMetadata
-      parameters:
-        - $ref: "#/parameters/workspaceId"
-        - $ref: "#/parameters/objectPath"
-      responses:
-        "200":
-          description: the metadata file contents at given path
-          schema:
-            type: file
-        default:
-          description: Error
-          schema:
-            $ref: "#/definitions/RestError"
-
-    #putMetadata
-    put:
-      x-handler: handlers/workspace/writeMetadata.js
-      tags: ["workspace"]
-      description: write a metadata file at given path. missing parents will be created.
-      operationId: writeMetadata
-      security:
-        - webida-simple-auth: []
-      parameters:
-        - $ref: "#/parameters/workspaceId"
-        - $ref: "#/parameters/objectPath"
-        - name: data
-          in: formData
-          required: true
-          description: file contents to write.
-          type: file
-      responses:
-        "200":
-          description: OK. saved.
-          schema:
-            $ref: "#/definitions/RestOK"
-        default:
-          description: Error
-          schema:
-            $ref: "#/definitions/RestError"
-
-    #removeMetadata
-    delete:
-      tags: ["workspace"]
-      description: delete metadata of given path
-      operationId: removeMetadata
-      security:
-        - webida-simple-auth: []
-      parameters:
-        - $ref: "#/parameters/workspaceId"
-        - $ref: "#/parameters/objectPath"
-      responses:
-        "200":
-          description: OK. removed
           schema:
             $ref: "#/definitions/RestOK"
         default:
@@ -898,9 +840,9 @@ paths:
           schema:
             $ref: "#/definitions/RestError"
 
-    # We dont define method POST here, for all sessions are made from web socket connections.
-    # And, we should separate ws connection end-point from API, for some servers will
-    # not host web socket in api implementation
+  # We dont define method POST here, for all sessions are made from web socket connections.
+  # And, we should separate ws connection end-point from API, for some servers may not be
+  # able to host web socket in api implementation.
 
   /sessions/{sessionId}:
     get:
@@ -1033,12 +975,12 @@ parameters:
     required: true
     type: string
 
-  objectPath:
-    name: objectPath
-    in: path
-    description: the path (filename without .json) of metadata, without heading /
-    required: true
+  execId:
+    name: execId
+    in: query
+    description: the id of execution request(different from pid!)
     type: string
+    required: false
 
   sessionId:
     name: sessionId
@@ -1046,7 +988,6 @@ parameters:
     description: webida session id (usually different from socket id from sock.io)
     required: true
     type: string
-
 
 definitions:
 
@@ -1339,13 +1280,9 @@ definitions:
       state:
         description: |
           state of this session
-
           NORMAL = connected, normally working
-
           LOSING = disconnected, waiting reconnection. still accessible with api
-
           CLOSING = socket connection will close connection by server (clinet will be notified)
-
           there"s no "CLOSED" / "LOST" state, for server will remove session object in registry
           when the server closes connection or stops waiting for reconnection for timeout.
         type: string
@@ -1389,69 +1326,87 @@ definitions:
   Execution:
     type: object
     description: |
-      execution request, simlilar to node.js spawn(). see node.js documentation for
+      execution request, simlilar to node.js exec()/spawn(). see node.js documentation for
       details of each properties. some properties are not configurable for portability
          - encoding : fixed to utf-8
-         - shell : fixed to system default. Using shell variables in command may not work.
+         - shell : fixed to system defaults. (so, cmd.exe will be invoked in Windows OS, not sh
+                  or bash in git-for-windows even they are available.)
          - killSignal : fixed to SIGTERM. If process does not die, server can send SIGKILL or
-                        invoke taskkill to ensure chlid process is killed.
+                        invoke taskkill, to ensure chlid process is killed.
          - uid & gid : will not be set for security
          - stdio : all streams are handled by server. no options are avaliable to client.
-         - shell : always false.
          - detached : always false
     properties:
       id:
         description: |
           unique identifier of execution, to demux response stream or cancel request.
-          async exec request should have id, always. For synchronous execution, missing
-          id will be generated by server with random string & timestamp.
+          Server should reject an async exec request without id.
         type: string
       command:
         description: |
-          command to run. should not contain any arguments, pipes, redirections
+          The command to run. Server may not support pipe, redirection nor shell variables in
+          command. Client should not assume any 'specific shell' in server and should not
+          using the shell features for portability.
+
+          In windows system with unix sh (e.g. cygwin or mingw from git-for-windows), usually
+          a shell script in PATH may work as command but probably allocates console window while
+          running the command. Implementations (both of server & client) should avoid allocating
+          additional console device while running service for costs and UX,  and should provide
+          a portable way to invoke commands. Shortly, when a service/product embeds some
+          '.sh' file to run, it must provide '.cmd' file doing same thing, always.
         type: string
       args:
-        description: the arguments array
+        description: |
+          the arguments array. Server can join this args to command with proper white-space char,
+          when underlying platform api (e.g. child_process#exec() in node.js) does not support
+          additional arguments vector. It's recommended to use args vector than making a long
+          command, to find & see child processes easily with this Rest API. So, args should be
+          always provided, even empty array.
+
+          When some arguments has a white space (e.g. C:\Program Files\webida), usually invoking
+          command understands escaping or quotation, but not always. Client should add proper
+          escaping or quotation chars to args vector manually. server should not change any
+          command or arguments.
         type: array
         items:
           type: string
       cwd:
         description: |
           Current working directory of spawned process, relative to workspace root. If abscent,
-          cwd will be the workspace root directory. Does not accept any evaluatable form like
-          $HOME, %USERPROFILE%. As wfs operations, path should be unixified. But, unlikely,
-          while the wfs operations cut heading "/" in path with URI normlization, this operation
-          does not convert path to relateive and returns error for the argument.
-        type: string
-      input:
-        description: |
-          input string for child process. if falsy, no input will be available to child.
-          (interactive execution via websocket is not supported for most of such processes
-           requires tty, not standard i/o)
+          cwd will be the workspace directory. Does not accept any evaluatable form like
+          $HOME, %USERPROFILE%. path should be unixified. Server may reject an 'absolute'
+          property.
         type: string
       timeout:
         description: |
-          The value which In "milliseconds" the maximum amount of time the child is allowed
-          to run. (not idle time of stdout / stderr stream) if undefined, server sets default
-          timeout value 5 min to synchronous execution requests. If request specifies async
-          execution and sets this value to falsy, server should not kill the child process until
-            1) The process exists by self
-            2) cancel operation is invoked by api request
-            3) The workspace executing the process is removed by api request
-            4) Server Stops
-          Terminiating any "too-long-lived" child process are not graceful, as cancel() is.
+          The value which In 'miliseconds' the maximum amount of time the child is allowed
+          to run. (not idle time of stdout / stderr stream) for sync exec. Server should not
+          apply default value for async exec, when omitted. The child process spawned by async
+          execution should be killed when
+           1) server goes down
+           2) process exits by self
+           3) cancel operation is invoked
         type: integer
+        default: 60000
+      maxBuffer:
+        description: |
+          Largest amount of data (in bytes) allowed on stdout or stderr for sync exec. Server
+          should not apply this limit to async execution. In sync exec, server may kill a
+          child process that has exceeded limit. default value is 512KB, large enough.
+        type: integer
+        default: 524288
     required:
       - command
       - args
+
 
   ExecutionResult:
     type: object
     description: execution response
     properties:
-      exitCode:
-        description: exit code of child process.
-        type: integer
+      error:
+        description: error message when execution failed.
+        type: string
       stdout:
         description: standard out of child process.
         type: string
@@ -1459,58 +1414,54 @@ definitions:
         description: standard error of child process.
         type: string
     required:
-      - exitCode
       - stdout
       - stderr
 
   ChildProcess:
     type: object
-    description: a process in execution
+    description: a process in execution, spawned by async exec or other mean
     properties:
       pid:
         description: child process pid
         type: integer
       command:
-        description: the execution command in Execution request
+        description: execution command in execution request
         type: string
       args:
-        description: arguments of the command in Execution request
+        description: arguments of command in execution request
         type: array
         items:
           type: string
-      executionId:
-        description: execution id from Execution request
+      execId:
+        description: execution id from execution request
         type: string
+      state:
+        description: |
+          state of process. Where
+            CREATED - process is just created. no event has arrived yet
+            WORKING - some output on stdout/stderr is arrived
+            KILLING - sent kill signal, by cancel operation or error event from the process
+            EXITED  - process has exited.
+        type: string
+        enum:
+          - CREATED
+          - WORKING
+          - KILLING
+          - EXITED
       startedAt:
         description: the time when this process is spawned
         type: string
         format: date-time
-      background:
-        description: |
-          true when this process is spawned by asynchronous exec request or some other ways to
-          spawn processes in server. fasle when this process is spawened with plain, synchronous
-          execution request.
-        type: array
-        items:
-          type: string
+      exitCode:
+        description: the exit code of child process. available with EXITED procs only.
+        type: integer
+      exitSignal:
+        description: the signal that killed this child process.(not always available)
+        type: string
     required:
       - pid
       - command
       - args
-      - executionId
+      - execId
+      - state
       - startedAt
-      - background
-
-  # BulkOperationResponse: (pending for next release, 1.1)
-  #   type: object
-  #   description: |
-  #     A map of errors from input list value when some of them failed. Ususally,
-  #     If  all of inputs succeeds, then the op. response will have status 200
-  #     If  any of inputs succeeds, then the op. response will have status 207
-  #     If none of inputs succeeds, then the op. response will have status 207, too.
-  #     This object does not contains any entries that is completed without error.
-  #     In other words, map contains only errors. When status code is 200, result map will be empty.
-  #     So, any "single" operation contained in bulk operatino should have 200 - RESTOK
-  #      for successful result. no other complex data types are allowed.
-  #   additionalProperties:
-  #     type: object

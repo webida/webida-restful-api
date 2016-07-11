@@ -3,7 +3,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**exitCode** | **Integer** | exit code of child process. | 
+**error** | **String** | error message when execution failed. | [optional] 
 **stdout** | **String** | standard out of child process. | 
 **stderr** | **String** | standard error of child process. | 
 

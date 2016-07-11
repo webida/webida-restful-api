@@ -2,9 +2,9 @@
 
 This SDK Contains automatically generated sources & documents with the [Swagger Codegen](https://github.com/swagger-api/swagger-codegen) project:
 
-- API version: 0.3.0
-- Package version: 0.3.0
-- Build date: 2016-07-11T14:35:38.260+09:00
+- API version: 0.5.0
+- Package version: 0.5.0
+- Build date: 2016-07-12T01:02:48.746+09:00
 - Build package: class io.swagger.codegen.languages.JavascriptClientCodegen
 
 ## Getting Started
@@ -63,14 +63,11 @@ Class | Method | HTTP request | Description
 *WebidaRestfulApi.WorkspaceApi* | [**cancel**](docs/WorkspaceApi.md#cancel) | **DELETE** /workspaces/{workspaceId}/exec | 
 *WebidaRestfulApi.WorkspaceApi* | [**createWorkspace**](docs/WorkspaceApi.md#createWorkspace) | **POST** /workspaces | 
 *WebidaRestfulApi.WorkspaceApi* | [**exec**](docs/WorkspaceApi.md#exec) | **POST** /workspaces/{workspaceId}/exec | 
+*WebidaRestfulApi.WorkspaceApi* | [**findProcs**](docs/WorkspaceApi.md#findProcs) | **GET** /workspaces/{workspaceId}/exec | 
 *WebidaRestfulApi.WorkspaceApi* | [**findWorkspaces**](docs/WorkspaceApi.md#findWorkspaces) | **GET** /workspaces | 
-*WebidaRestfulApi.WorkspaceApi* | [**getChildProcs**](docs/WorkspaceApi.md#getChildProcs) | **GET** /workspaces/{workspaceId}/exec | 
 *WebidaRestfulApi.WorkspaceApi* | [**getWorkspace**](docs/WorkspaceApi.md#getWorkspace) | **GET** /workspaces/{workspaceId} | 
-*WebidaRestfulApi.WorkspaceApi* | [**readMetadata**](docs/WorkspaceApi.md#readMetadata) | **GET** /workspaces/{workspaceId}/metadata/{objectPath} | 
-*WebidaRestfulApi.WorkspaceApi* | [**removeMetadata**](docs/WorkspaceApi.md#removeMetadata) | **DELETE** /workspaces/{workspaceId}/metadata/{objectPath} | 
 *WebidaRestfulApi.WorkspaceApi* | [**removeWorkspace**](docs/WorkspaceApi.md#removeWorkspace) | **DELETE** /workspaces/{workspaceId} | 
 *WebidaRestfulApi.WorkspaceApi* | [**updateWorkspace**](docs/WorkspaceApi.md#updateWorkspace) | **PUT** /workspaces/{workspaceId} | 
-*WebidaRestfulApi.WorkspaceApi* | [**writeMetadata**](docs/WorkspaceApi.md#writeMetadata) | **PUT** /workspaces/{workspaceId}/metadata/{objectPath} | 
 
 
 ## Documentation for Models
