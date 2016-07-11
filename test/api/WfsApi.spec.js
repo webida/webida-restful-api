@@ -119,16 +119,6 @@
         done();
       });
     });
-    describe('rename', function() {
-      it('should call rename successfully', function(done) {
-        //uncomment below and update the code to test rename
-        //instance.rename(pet, function(error) {
-        //  if (error) throw error;
-        //expect().to.be();
-        //});
-        done();
-      });
-    });
     describe('stat', function() {
       it('should call stat successfully', function(done) {
         //uncomment below and update the code to test stat

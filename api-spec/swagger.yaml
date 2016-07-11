@@ -227,42 +227,6 @@ paths:
           schema:
             $ref: "#/definitions/RestError"
 
-    # rename
-    post:
-      x-handler: handlers/wfs/rename.js
-      tags: ["wfs"]
-      description: |
-        Renames a file or directory to wfsPath. Unlike POSIX rename() call semantics, this operation
-        does not overwrite anything. Renaming to any 'existing' source will return error except
-        only 1 case, with emulateMove option.
-      operationId: rename
-      security:
-        - webida-simple-auth: []
-      parameters:
-        - $ref: "#/parameters/wfsId"
-        - $ref: "#/parameters/wfsPath"
-        - $ref: "#/parameters/srcPath"
-        - $ref: "#/parameters/ensureParents"
-        - name: emulateMove
-          in: query
-          description: |
-            When rename file to existing dir, move file to the dir instead of returning error.
-            This option is provided for legacy, dummy clients only to emulate legacy server's
-            move behaviour. Newly written client app should not use this option & use move()
-            operation to have clear behaviour.
-          required: false
-          type: boolean
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: "#/definitions/RestOK"
-        default:
-          description: Error
-          schema:
-            $ref: "#/definitions/RestError"
-
-
   /wfs/{wfsId}/dir/{wfsPath}:
     # dirTree
     get:
@@ -451,10 +415,10 @@ paths:
       parameters:
         - $ref: "#/parameters/wfsId"
         - $ref: "#/parameters/wfsPath"
-        - name: unrecursive
+        - name: noRecursive
           in: query
           required: false
-          description: if set, deleting non-empty directory will return error.
+          description: if set, deleting non-empty directory will return 409 error.
           type: boolean
           default: false
       responses:
@@ -466,7 +430,6 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/RestError"
-
 
   # search
   /wfs/{wfsId}/ops/search/{wfsPath}:

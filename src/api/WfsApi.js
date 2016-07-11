@@ -362,7 +362,7 @@
      * @param {String} wfsId webida file system id (same to workspace id) to access.
      * @param {String} wfsPath webida file system path to access. without heading /. should be placed at the end of path arguments 
      * @param {Object} opts Optional parameters
-     * @param {Boolean} opts.unrecursive if set, deleting non-empty directory will return error. (default to false)
+     * @param {Boolean} opts.noRecursive if set, deleting non-empty directory will return 409 error. (default to false)
      * @param {module:api/WfsApi~removeCallback} callback The callback function, accepting three arguments: error, data, response
      * data is of type: {module:model/RestOK}
      */
@@ -386,7 +386,7 @@
         'wfsPath': wfsPath
       };
       var queryParams = {
-        'unrecursive': opts['unrecursive']
+        'noRecursive': opts['noRecursive']
       };
       var headerParams = {
       };
@@ -400,71 +400,6 @@
 
       return this.apiClient.callApi(
         '/wfs/{wfsId}/any/{wfsPath}', 'DELETE',
-        pathParams, queryParams, headerParams, formParams, postBody,
-        authNames, contentTypes, accepts, returnType, callback
-      );
-    }
-
-    /**
-     * Callback function to receive the result of the rename operation.
-     * @callback module:api/WfsApi~renameCallback
-     * @param {String} error Error message, if any.
-     * @param {module:model/RestOK} data The data returned by the service call.
-     * @param {String} response The complete HTTP response.
-     */
-
-    /**
-     * Renames a file or directory to wfsPath. Unlike POSIX rename() call semantics, this operation does not overwrite anything. Renaming to any &#39;existing&#39; source will return error except only 1 case, with emulateMove option. 
-     * @param {String} wfsId webida file system id (same to workspace id) to access.
-     * @param {String} wfsPath webida file system path to access. without heading /. should be placed at the end of path arguments 
-     * @param {String} srcPath source data path of some operations, with have heading /
-     * @param {Object} opts Optional parameters
-     * @param {Boolean} opts.ensureParents A flag to create all parent directories to create file or dir, like mkdir -p. This parameter does not create entire path, but creates to &#39;parent directory&#39; of the path.  (default to false)
-     * @param {Boolean} opts.emulateMove When rename file to existing dir, move file to the dir instead of returning error. This option is provided for legacy, dummy clients only to emulate legacy server&#39;s move behaviour. Newly written client app should not use this option &amp; use move() operation to have clear behaviour. 
-     * @param {module:api/WfsApi~renameCallback} callback The callback function, accepting three arguments: error, data, response
-     * data is of type: {module:model/RestOK}
-     */
-    this.rename = function(wfsId, wfsPath, srcPath, opts, callback) {
-      opts = opts || {};
-      var postBody = null;
-
-      // verify the required parameter 'wfsId' is set
-      if (wfsId == undefined || wfsId == null) {
-        throw "Missing the required parameter 'wfsId' when calling rename";
-      }
-
-      // verify the required parameter 'wfsPath' is set
-      if (wfsPath == undefined || wfsPath == null) {
-        throw "Missing the required parameter 'wfsPath' when calling rename";
-      }
-
-      // verify the required parameter 'srcPath' is set
-      if (srcPath == undefined || srcPath == null) {
-        throw "Missing the required parameter 'srcPath' when calling rename";
-      }
-
-
-      var pathParams = {
-        'wfsId': wfsId,
-        'wfsPath': wfsPath
-      };
-      var queryParams = {
-        'srcPath': srcPath,
-        'ensureParents': opts['ensureParents'],
-        'emulateMove': opts['emulateMove']
-      };
-      var headerParams = {
-      };
-      var formParams = {
-      };
-
-      var authNames = ['webida-simple-auth'];
-      var contentTypes = ['application/json'];
-      var accepts = ['application/json', 'application/octet-stream'];
-      var returnType = RestOK;
-
-      return this.apiClient.callApi(
-        '/wfs/{wfsId}/file/{wfsPath}', 'POST',
         pathParams, queryParams, headerParams, formParams, postBody,
         authNames, contentTypes, accepts, returnType, callback
       );
