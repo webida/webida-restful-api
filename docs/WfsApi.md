@@ -10,7 +10,6 @@ Method | HTTP request | Description
 [**move**](WfsApi.md#move) | **POST** /wfs/{wfsId}/any/{wfsPath} | 
 [**readFile**](WfsApi.md#readFile) | **GET** /wfs/{wfsId}/file/{wfsPath} | 
 [**remove**](WfsApi.md#remove) | **DELETE** /wfs/{wfsId}/any/{wfsPath} | 
-[**rename**](WfsApi.md#rename) | **POST** /wfs/{wfsId}/file/{wfsPath} | 
 [**stat**](WfsApi.md#stat) | **GET** /wfs/{wfsId}/any/{wfsPath} | 
 [**writeFile**](WfsApi.md#writeFile) | **PUT** /wfs/{wfsId}/file/{wfsPath} | 
 
@@ -342,7 +341,7 @@ var wfsId = "wfsId_example"; // String | webida file system id (same to workspac
 var wfsPath = "wfsPath_example"; // String | webida file system path to access. without heading /. should be placed at the end of path arguments 
 
 var opts = { 
-  'unrecursive': false // Boolean | if set, deleting non-empty directory will return error.
+  'noRecursive': false // Boolean | if set, deleting non-empty directory will return 409 error.
 };
 
 var callback = function(error, data, response) {
@@ -361,72 +360,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
  **wfsPath** | **String**| webida file system path to access. without heading /. should be placed at the end of path arguments  | 
- **unrecursive** | **Boolean**| if set, deleting non-empty directory will return error. | [optional] [default to false]
-
-### Return type
-
-[**RestOK**](RestOK.md)
-
-### Authorization
-
-[webida-simple-auth](../README.md#webida-simple-auth)
-
-### HTTP request headers
-
- - **Content-Type**: application/json
- - **Accept**: application/json, application/octet-stream
-
-<a name="rename"></a>
-# **rename**
-> RestOK rename(wfsId, wfsPath, srcPath, opts)
-
-
-
-Renames a file or directory to wfsPath. Unlike POSIX rename() call semantics, this operation does not overwrite anything. Renaming to any &#39;existing&#39; source will return error except only 1 case, with emulateMove option. 
-
-### Example
-```javascript
-var WebidaRestfulApi = require('webida_restful_api');
-var defaultClient = WebidaRestfulApi.ApiClient.default;
-
-// Configure API key authorization: webida-simple-auth
-var webida-simple-auth = defaultClient.authentications['webida-simple-auth'];
-webida-simple-auth.apiKey = 'YOUR API KEY';
-// Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-//webida-simple-auth.apiKeyPrefix = 'Token';
-
-var apiInstance = new WebidaRestfulApi.WfsApi();
-
-var wfsId = "wfsId_example"; // String | webida file system id (same to workspace id) to access.
-
-var wfsPath = "wfsPath_example"; // String | webida file system path to access. without heading /. should be placed at the end of path arguments 
-
-var srcPath = "srcPath_example"; // String | source data path of some operations, with have heading /
-
-var opts = { 
-  'ensureParents': false, // Boolean | A flag to create all parent directories to create file or dir, like mkdir -p. This parameter does not create entire path, but creates to 'parent directory' of the path. 
-  'emulateMove': true // Boolean | When rename file to existing dir, move file to the dir instead of returning error. This option is provided for legacy, dummy clients only to emulate legacy server's move behaviour. Newly written client app should not use this option & use move() operation to have clear behaviour. 
-};
-
-var callback = function(error, data, response) {
-  if (error) {
-    console.error(error);
-  } else {
-    console.log('API called successfully. Returned data: ' + data);
-  }
-};
-apiInstance.rename(wfsId, wfsPath, srcPath, opts, callback);
-```
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
- **wfsPath** | **String**| webida file system path to access. without heading /. should be placed at the end of path arguments  | 
- **srcPath** | **String**| source data path of some operations, with have heading / | 
- **ensureParents** | **Boolean**| A flag to create all parent directories to create file or dir, like mkdir -p. This parameter does not create entire path, but creates to &#39;parent directory&#39; of the path.  | [optional] [default to false]
- **emulateMove** | **Boolean**| When rename file to existing dir, move file to the dir instead of returning error. This option is provided for legacy, dummy clients only to emulate legacy server&#39;s move behaviour. Newly written client app should not use this option &amp; use move() operation to have clear behaviour.  | [optional] 
+ **noRecursive** | **Boolean**| if set, deleting non-empty directory will return 409 error. | [optional] [default to false]
 
 ### Return type
 
@@ -529,7 +463,7 @@ var wfsPath = "wfsPath_example"; // String | webida file system path to access. 
 var data = "/path/to/file.txt"; // File | file contents to write.
 
 var opts = { 
-  'ensureParents': false, // Boolean | A flag to create all parent directories to create file or dir, like mkdir -p. This parameter does not create entire path, but creates to 'parent directory' of the path. 
+  'ensureParents': false // Boolean | A flag to create all parent directories to create file or dir, like mkdir -p. This parameter does not create entire path, but creates to 'parent directory' of the path. 
 };
 
 var callback = function(error, data, response) {

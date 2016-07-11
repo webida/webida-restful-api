@@ -481,9 +481,9 @@
           "type" : "string",
           "pattern" : ".*"
         }, {
-          "name" : "unrecursive",
+          "name" : "noRecursive",
           "in" : "query",
-          "description" : "if set, deleting non-empty directory will return error.",
+          "description" : "if set, deleting non-empty directory will return 409 error.",
           "required" : false,
           "type" : "boolean",
           "default" : false
@@ -627,62 +627,6 @@
           "webida-simple-auth" : [ ]
         } ],
         "x-handler" : "handlers/wfs/readFile.js"
-      },
-      "post" : {
-        "tags" : [ "wfs" ],
-        "description" : "Renames a file or directory to wfsPath. Unlike POSIX rename() call semantics, this operation\ndoes not overwrite anything. Renaming to any 'existing' source will return error except\nonly 1 case, with emulateMove option.\n",
-        "operationId" : "rename",
-        "parameters" : [ {
-          "name" : "wfsId",
-          "in" : "path",
-          "description" : "webida file system id (same to workspace id) to access.",
-          "required" : true,
-          "type" : "string"
-        }, {
-          "name" : "wfsPath",
-          "in" : "path",
-          "description" : "webida file system path to access. without heading /. should be placed at the end of path arguments\n",
-          "required" : true,
-          "type" : "string",
-          "pattern" : ".*"
-        }, {
-          "name" : "srcPath",
-          "in" : "query",
-          "description" : "source data path of some operations, with have heading /",
-          "required" : true,
-          "type" : "string"
-        }, {
-          "name" : "ensureParents",
-          "in" : "query",
-          "description" : "A flag to create all parent directories to create file or dir, like mkdir -p. This parameter\ndoes not create entire path, but creates to 'parent directory' of the path.\n",
-          "required" : false,
-          "type" : "boolean",
-          "default" : false
-        }, {
-          "name" : "emulateMove",
-          "in" : "query",
-          "description" : "When rename file to existing dir, move file to the dir instead of returning error.\nThis option is provided for legacy, dummy clients only to emulate legacy server's\nmove behaviour. Newly written client app should not use this option & use move()\noperation to have clear behaviour.\n",
-          "required" : false,
-          "type" : "boolean"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "schema" : {
-              "$ref" : "#/definitions/RestOK"
-            }
-          },
-          "default" : {
-            "description" : "Error",
-            "schema" : {
-              "$ref" : "#/definitions/RestError"
-            }
-          }
-        },
-        "security" : [ {
-          "webida-simple-auth" : [ ]
-        } ],
-        "x-handler" : "handlers/wfs/rename.js"
       },
       "put" : {
         "tags" : [ "wfs" ],

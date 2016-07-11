@@ -4,7 +4,7 @@ This SDK Contains automatically generated sources & documents with the [Swagger 
 
 - API version: 0.3.0
 - Package version: 0.3.0
-- Build date: 2016-07-10T23:35:06.325+09:00
+- Build date: 2016-07-11T14:35:38.260+09:00
 - Build package: class io.swagger.codegen.languages.JavascriptClientCodegen
 
 ## Getting Started
@@ -58,7 +58,6 @@ Class | Method | HTTP request | Description
 *WebidaRestfulApi.WfsApi* | [**move**](docs/WfsApi.md#move) | **POST** /wfs/{wfsId}/any/{wfsPath} | 
 *WebidaRestfulApi.WfsApi* | [**readFile**](docs/WfsApi.md#readFile) | **GET** /wfs/{wfsId}/file/{wfsPath} | 
 *WebidaRestfulApi.WfsApi* | [**remove**](docs/WfsApi.md#remove) | **DELETE** /wfs/{wfsId}/any/{wfsPath} | 
-*WebidaRestfulApi.WfsApi* | [**rename**](docs/WfsApi.md#rename) | **POST** /wfs/{wfsId}/file/{wfsPath} | 
 *WebidaRestfulApi.WfsApi* | [**stat**](docs/WfsApi.md#stat) | **GET** /wfs/{wfsId}/any/{wfsPath} | 
 *WebidaRestfulApi.WfsApi* | [**writeFile**](docs/WfsApi.md#writeFile) | **PUT** /wfs/{wfsId}/file/{wfsPath} | 
 *WebidaRestfulApi.WorkspaceApi* | [**cancel**](docs/WorkspaceApi.md#cancel) | **DELETE** /workspaces/{workspaceId}/exec | 
