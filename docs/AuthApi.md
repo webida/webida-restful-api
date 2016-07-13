@@ -80,7 +80,7 @@ var apiInstance = new WebidaRestfulApi.AuthApi();
 var type = "type_example"; // String | 
 
 var opts = { 
-  'workspaceId': "workspaceId_example" // String | recommended to issue a MASTER type token to restrict remote access
+  'workspaceId': "workspaceId_example" // String | Clients to save some remote access info should issue a MASTER type token restricted to specific workspace id.
 };
 
 var callback = function(error, data, response) {
@@ -98,7 +98,7 @@ apiInstance.issueToken(type, opts, callback);
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **type** | **String**|  | 
- **workspaceId** | **String**| recommended to issue a MASTER type token to restrict remote access | [optional] 
+ **workspaceId** | **String**| Clients to save some remote access info should issue a MASTER type token restricted to specific workspace id. | [optional] 
 
 ### Return type
 

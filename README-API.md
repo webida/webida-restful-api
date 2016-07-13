@@ -2,9 +2,9 @@
 
 This SDK Contains automatically generated sources & documents with the [Swagger Codegen](https://github.com/swagger-api/swagger-codegen) project:
 
-- API version: 0.5.0
-- Package version: 0.5.0
-- Build date: 2016-07-12T01:02:48.746+09:00
+- API version: 0.6.0
+- Package version: 0.6.0
+- Build date: 2016-07-13T17:50:12.792+09:00
 - Build package: class io.swagger.codegen.languages.JavascriptClientCodegen
 
 ## Getting Started
@@ -20,7 +20,12 @@ webida-simple-auth.apiKey = "YOUR API KEY"
 // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
 //webida-simple-auth.apiKeyPrefix['Authorization'] = "Token"
 
-var api = new WebidaRestfulApi.AuthApi()
+var api = new WebidaRestfulApi.AliasApi()
+
+var aliasId = "aliasId_example"; // {String} url path fragment alias id. should have no '/' as well as any 'unsafe' chars for url path.  especially, '*' is reserved for finding operations or some other special case.
+
+var workspaceId = "workspaceId_example"; // {String} webida workspace id in query part
+
 
 var callback = function(error, data, response) {
   if (error) {
@@ -29,7 +34,7 @@ var callback = function(error, data, response) {
     console.log('API called successfully. Returned data: ' + data);
   }
 };
-api.getInfo(callback);
+api.findAliases(aliasId, workspaceId, , callback);
 
 ```
 
@@ -41,17 +46,19 @@ So, generated basePath *https://localhost/api* should be changed to `${serverUrl
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
+*WebidaRestfulApi.AliasApi* | [**findAliases**](docs/AliasApi.md#findAliases) | **GET** /aliass/{aliasId} | 
+*WebidaRestfulApi.AliasApi* | [**putAlias**](docs/AliasApi.md#putAlias) | **PUT** /aliass/{aliasId} | 
+*WebidaRestfulApi.AliasApi* | [**removeAliases**](docs/AliasApi.md#removeAliases) | **DELETE** /aliass/{aliasId} | 
 *WebidaRestfulApi.AuthApi* | [**getInfo**](docs/AuthApi.md#getInfo) | **GET** /auth/info | 
 *WebidaRestfulApi.AuthApi* | [**issueToken**](docs/AuthApi.md#issueToken) | **POST** /auth/token | 
 *WebidaRestfulApi.AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | 
 *WebidaRestfulApi.OpsApi* | [**replace**](docs/OpsApi.md#replace) | **POST** /wfs/{wfsId}/ops/replace | 
-*WebidaRestfulApi.OpsApi* | [**search**](docs/OpsApi.md#search) | **GET** /wfs/{wfsId}/ops/search/{wfsPath} | 
+*WebidaRestfulApi.OpsApi* | [**search**](docs/OpsApi.md#search) | **GET** /wfs/{wfsId}/ops/search | 
 *WebidaRestfulApi.RemotesApi* | [**findRemoteAccesses**](docs/RemotesApi.md#findRemoteAccesses) | **GET** /remotes | 
 *WebidaRestfulApi.RemotesApi* | [**putRemoteAccess**](docs/RemotesApi.md#putRemoteAccess) | **PUT** /remotes | 
 *WebidaRestfulApi.RemotesApi* | [**removeRemoteAccess**](docs/RemotesApi.md#removeRemoteAccess) | **DELETE** /remotes | 
-*WebidaRestfulApi.SessionApi* | [**closeSession**](docs/SessionApi.md#closeSession) | **DELETE** /sessions/{sessionId} | 
-*WebidaRestfulApi.SessionApi* | [**findSessions**](docs/SessionApi.md#findSessions) | **GET** /sessions | 
-*WebidaRestfulApi.SessionApi* | [**getSession**](docs/SessionApi.md#getSession) | **GET** /sessions/{sessionId} | 
+*WebidaRestfulApi.SessionApi* | [**closeSessions**](docs/SessionApi.md#closeSessions) | **DELETE** /sessions/{sessionId} | 
+*WebidaRestfulApi.SessionApi* | [**findSessions**](docs/SessionApi.md#findSessions) | **GET** /sessions/{sessionId} | 
 *WebidaRestfulApi.WfsApi* | [**copy**](docs/WfsApi.md#copy) | **PUT** /wfs/{wfsId}/any/{wfsPath} | 
 *WebidaRestfulApi.WfsApi* | [**createDir**](docs/WfsApi.md#createDir) | **PUT** /wfs/{wfsId}/dir/{wfsPath} | 
 *WebidaRestfulApi.WfsApi* | [**dirTree**](docs/WfsApi.md#dirTree) | **GET** /wfs/{wfsId}/dir/{wfsPath} | 
@@ -61,17 +68,17 @@ Class | Method | HTTP request | Description
 *WebidaRestfulApi.WfsApi* | [**stat**](docs/WfsApi.md#stat) | **GET** /wfs/{wfsId}/any/{wfsPath} | 
 *WebidaRestfulApi.WfsApi* | [**writeFile**](docs/WfsApi.md#writeFile) | **PUT** /wfs/{wfsId}/file/{wfsPath} | 
 *WebidaRestfulApi.WorkspaceApi* | [**cancel**](docs/WorkspaceApi.md#cancel) | **DELETE** /workspaces/{workspaceId}/exec | 
-*WebidaRestfulApi.WorkspaceApi* | [**createWorkspace**](docs/WorkspaceApi.md#createWorkspace) | **POST** /workspaces | 
+*WebidaRestfulApi.WorkspaceApi* | [**createWorkspace**](docs/WorkspaceApi.md#createWorkspace) | **POST** /workspaces/{workspaceId} | 
 *WebidaRestfulApi.WorkspaceApi* | [**exec**](docs/WorkspaceApi.md#exec) | **POST** /workspaces/{workspaceId}/exec | 
 *WebidaRestfulApi.WorkspaceApi* | [**findProcs**](docs/WorkspaceApi.md#findProcs) | **GET** /workspaces/{workspaceId}/exec | 
-*WebidaRestfulApi.WorkspaceApi* | [**findWorkspaces**](docs/WorkspaceApi.md#findWorkspaces) | **GET** /workspaces | 
-*WebidaRestfulApi.WorkspaceApi* | [**getWorkspace**](docs/WorkspaceApi.md#getWorkspace) | **GET** /workspaces/{workspaceId} | 
+*WebidaRestfulApi.WorkspaceApi* | [**findWorkspaces**](docs/WorkspaceApi.md#findWorkspaces) | **GET** /workspaces/{workspaceId} | 
 *WebidaRestfulApi.WorkspaceApi* | [**removeWorkspace**](docs/WorkspaceApi.md#removeWorkspace) | **DELETE** /workspaces/{workspaceId} | 
 *WebidaRestfulApi.WorkspaceApi* | [**updateWorkspace**](docs/WorkspaceApi.md#updateWorkspace) | **PUT** /workspaces/{workspaceId} | 
 
 
 ## Documentation for Models
 
+ - [WebidaRestfulApi.Alias](docs/Alias.md)
  - [WebidaRestfulApi.ChildProcess](docs/ChildProcess.md)
  - [WebidaRestfulApi.Credential](docs/Credential.md)
  - [WebidaRestfulApi.DirEntry](docs/DirEntry.md)

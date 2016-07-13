@@ -5,7 +5,7 @@ All URIs are relative to *https://localhost/api*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**replace**](OpsApi.md#replace) | **POST** /wfs/{wfsId}/ops/replace | 
-[**search**](OpsApi.md#search) | **GET** /wfs/{wfsId}/ops/search/{wfsPath} | 
+[**search**](OpsApi.md#search) | **GET** /wfs/{wfsId}/ops/search | 
 
 
 <a name="replace"></a>
@@ -31,14 +31,14 @@ var apiInstance = new WebidaRestfulApi.OpsApi();
 
 var wfsId = "wfsId_example"; // String | webida file system id (same to workspace id) to access.
 
-var wfsPathList = ["wfsPathList_example"]; // [String] | array of wfsPath, with heading /  (collection format may be changed by implementation)
+var wfsPathList = ["wfsPathList_example"]; // [String] | array of wfsPath, with heading /. (collectionFormat may be changed by implementation)
 
-var pattern = "pattern_example"; // String | regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation 
+var pattern = "pattern_example"; // String | regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation
 
 var replaceTo = "replaceTo_example"; // String | string to replace with
 
 var opts = { 
-  'ignoreCase': false // Boolean | regex matching option to ignore case. In replace operation, this option should be same to one used in search operation 
+  'ignoreCase': false // Boolean | regex matching option to ignore case. In replace operation, this option should be same to one used in search operation
 };
 
 var callback = function(error, data, response) {
@@ -56,10 +56,10 @@ apiInstance.replace(wfsId, wfsPathList, patternreplaceTo, opts, callback);
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
- **wfsPathList** | [**[String]**](String.md)| array of wfsPath, with heading /  (collection format may be changed by implementation) | 
- **pattern** | **String**| regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation  | 
+ **wfsPathList** | [**[String]**](String.md)| array of wfsPath, with heading /. (collectionFormat may be changed by implementation) | 
+ **pattern** | **String**| regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation | 
  **replaceTo** | **String**| string to replace with | 
- **ignoreCase** | **Boolean**| regex matching option to ignore case. In replace operation, this option should be same to one used in search operation  | [optional] [default to false]
+ **ignoreCase** | **Boolean**| regex matching option to ignore case. In replace operation, this option should be same to one used in search operation | [optional] [default to false]
 
 ### Return type
 
@@ -76,7 +76,7 @@ Name | Type | Description  | Notes
 
 <a name="search"></a>
 # **search**
-> {&#39;String&#39;: [Match]} search(wfsId, wfsPath, pattern, opts)
+> {&#39;String&#39;: [Match]} search(wfsId, wfsPathList, pattern, opts)
 
 
 
@@ -97,12 +97,12 @@ var apiInstance = new WebidaRestfulApi.OpsApi();
 
 var wfsId = "wfsId_example"; // String | webida file system id (same to workspace id) to access.
 
-var wfsPath = "wfsPath_example"; // String | webida file system path to access. without heading /. should be placed at the end of path arguments 
+var wfsPathList = ["wfsPathList_example"]; // [String] | array of wfsPath, with heading /. (collectionFormat may be changed by implementation)
 
-var pattern = "pattern_example"; // String | regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation 
+var pattern = "pattern_example"; // String | regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation
 
 var opts = { 
-  'ignoreCase': false // Boolean | regex matching option to ignore case. In replace operation, this option should be same to one used in search operation 
+  'ignoreCase': false // Boolean | regex matching option to ignore case. In replace operation, this option should be same to one used in search operation
 };
 
 var callback = function(error, data, response) {
@@ -112,7 +112,7 @@ var callback = function(error, data, response) {
     console.log('API called successfully. Returned data: ' + data);
   }
 };
-apiInstance.search(wfsId, wfsPath, pattern, opts, callback);
+apiInstance.search(wfsId, wfsPathList, pattern, opts, callback);
 ```
 
 ### Parameters
@@ -120,9 +120,9 @@ apiInstance.search(wfsId, wfsPath, pattern, opts, callback);
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
- **wfsPath** | **String**| webida file system path to access. without heading /. should be placed at the end of path arguments  | 
- **pattern** | **String**| regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation  | 
- **ignoreCase** | **Boolean**| regex matching option to ignore case. In replace operation, this option should be same to one used in search operation  | [optional] [default to false]
+ **wfsPathList** | [**[String]**](String.md)| array of wfsPath, with heading /. (collectionFormat may be changed by implementation) | 
+ **pattern** | **String**| regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation | 
+ **ignoreCase** | **Boolean**| regex matching option to ignore case. In replace operation, this option should be same to one used in search operation | [optional] [default to false]
 
 ### Return type
 
