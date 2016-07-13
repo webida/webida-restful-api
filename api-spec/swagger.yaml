@@ -21,7 +21,7 @@
 swagger: "2.0"
 
 info:
-  version: "0.5.0"
+  version: "0.6.0"
   title: Webida Restful API
   description: Restful API for Webida clients to use server's data & features
   license:
@@ -50,23 +50,13 @@ paths:
       description: |
         A "VERY" basic authentication, required to use webida-simple-auth security scheme.
 
-        Service / Product implementations who need better security, should override this operation
-        or add their own login api or some other specs like OAuth2. Simple auth is not suitable
-        for large-sacle, multi-tennant service, for the scheme assumes a single, trusted user only.
+        Service / Product implementations who need better security, should override this operation or add their own login api or some other specs like OAuth2. Simple auth is not suitable for large-sacle, multi-tennant service, for the scheme assumes a single, trusted user only.
 
-        Logging-in with master token, the generated access token inherits all restriction from it.
-        On the other hand, normal log-in with login id & password creates an unrestricted access
-        token, with reasonably short expiration time.
+        Logging-in with master token, the generated access token inherits all restriction from it. On the other hand, normal log-in with login id & password creates an unrestricted access token, with reasonably short expiration time.
 
-        Every client should spawn another access token with issueToken API before current
-        access token expires, inheriting session id from current token. To save remote access
-        info, client should create a (restricted but long-ttl) master token to start IDE from
-        remote. The remote client should not use the unrestricted acccess token from login
-        to use any other perpose than finding available workspaces, and should not refresh
-        the token. (Let user log-in again)
+        Every client should spawn another access token with issueToken API before current access token expires, inheriting session id from current token. To save remote access info, client should create a (restricted but long-ttl) master token to start IDE from remote. The remote client should not use the unrestricted acccess token from login to use any other perpose than finding available workspaces, and should not refresh the token. (Let user log-in again)
 
-        Login API does not force any encryption. Server should provide secure transport channel,
-        usually https, to provide remote access, always.
+        Login API does not force any encryption. Server should provide secure transport channel, usually https, to provide remote access, always.
       operationId: login
       parameters:
         - name: body
@@ -89,10 +79,7 @@ paths:
       x-handler: handlers/auth/getInfo.js
       tags: ["auth"]
       description: |
-        Gets user information of that can be identified with current access token. Implementations
-        should provide a more restful api based on domain data model, not extending this operation.
-        (e.g. GET,PUT and DELETE on /Users/{userId} to read, update and delete user)
-
+        Gets user information of that can be identified with current access token. Implementations should provide a more restful api based on domain data model, not extending this operation. (e.g. GET,PUT and DELETE on /Users/{userId} to read, update and delete user)
       operationId: getInfo
       security:
         - webida-simple-auth: []
@@ -115,15 +102,9 @@ paths:
       x-handler: handlers/auth/issueToken.js
       tags: ["auth"]
       description: |
-        Creates new token from current access token, inheriting workspace id & session id.
-        The duration of generated token is (and should not be) parameterizable. Server should
-        set proper duration, respecting "reconnect" period of socket.io clients. Remember that
-        most of socket.io client implementations (including official js client) do not provide
-        any ways to change connection parameters (header or query) while reconnecting to server.
+        Creates new token from current access token, inheriting workspace id & session id. The duration of generated token is (and should not be) parameterizable. Server should set proper duration, respecting "reconnect" period of socket.io clients. Remember that most of socket.io client implementations (including official js client) do not provide any ways to change connection parameters (header or query) while reconnecting to server.
 
-        Like login API, this endpoint does not provide any encryption. Server should not set any
-        data to harm security in the token & should provide some signinig/encryption mechanism
-        to protect token. Simple JSON Web Token with HMAC-SHA will do.
+        Like login API, this endpoint does not provide any encryption. Server should not set any data to harm security in the token & should provide some signinig/encryption mechanism to protect token. Simple JSON Web Token with HMAC-SHA will do.
 
       operationId: issueToken
       security:
@@ -138,7 +119,7 @@ paths:
           in: query
           required: false
           type: string
-          description: recommended to issue a MASTER type token to restrict remote access
+          description: Clients to save some remote access info should issue a MASTER type token restricted to specific workspace id.
       responses:
         "200":
           description: new token generated
@@ -149,28 +130,24 @@ paths:
           schema:
             $ref: "#/definitions/RestError"
 
-  #
-  # wfs paths starts with /wfs/{wfsId}
+
+  # Basic WFS operations , read/write file, create dir, delete, copy, move, ...
+  #  wfs paths starts with /wfs/{wfsId}
   #  /file/{wfsPath} file CRUD C,U is PUT, not POST
   #    GET - read file
   #    PUT - write file
   #  /dir/{wfsPath} directory CRUD
-  #    GET - list (read) dir
+  #    GET - list (tree) dir
   #    PUT - create (can  be expanded to import, later)
   #  /any/{wfsPath}
   #    GET?{ignoreError} - stat / exists
   #    PUT?{src} - copy
   #    POST?{src} - move
-  #    DELETE - delete
-  #  /ops/search/{wfsPath} for search (GET) and replace (POST)
-  #  /ops/replace?{wfsPath} for search (GET) and replace (POST)
-  #
-  #  We can"t use /wfs/{wfsId}/{wfsPath} form because swagger does not support "one-of"
-  #    in json schema nor path spec with query parameter. For example, a GET request,
-  #    having 3 semantics - stat/list/read.
-  #  So, reading from /{wfsId}/{wfsPath} requires 3 endpoint paths.
-  #
+  #    DELETE - remove
+  #  /ops/search?{wfsPathQuery} for search (GET) and replace (POST)
+  #  /ops/replace?{wfsPathQuery} for search (GET) and replace (POST)
 
+  # WFS File operations - read/write
   /wfs/{wfsId}/file/{wfsPath}:
     # readFile.
     get:
@@ -185,8 +162,7 @@ paths:
         - $ref: "#/parameters/wfsPath"
       responses:
         "200":
-          description: |
-            File contents. Content-Type is application/octet-stream or follows file name extension.
+          description: File contents. Content-Type is application/octet-stream or follows file name extension.
           schema:
             type: file
         default:
@@ -198,11 +174,7 @@ paths:
     put:
       x-handler: handlers/wfs/writeFile.js
       tags: ["wfs"]
-      description: |
-        Creates / updates file with body data. Server should write the file in 'atomic' manner,
-        and should not write down request body into final destination path directly. In other words,
-        wheather writeFile() succeeds or not, the contents of the file should not be corrupted nor
-        half-written.
+      description: Creates / updates file with body data. Server should write the file in atomic manner nd should not write down request body into final destination path directly. In other words,  wheather writeFile() succeeds or not, the contents of the file should not be corrupted nor half-written.
       operationId: writeFile
       consumes:
         - multipart/form-data
@@ -227,14 +199,13 @@ paths:
           schema:
             $ref: "#/definitions/RestError"
 
+  # WFS Dir operations - list(tree) and create empty one
   /wfs/{wfsId}/dir/{wfsPath}:
     # dirTree
     get:
       x-handler: handlers/wfs/dirTree.js
       tags: ["wfs"]
-      description: |
-        returns a directory tree of given path, for listing dir and managing file system
-        errors while building sub-tree will be ignored and will not be included in result.
+      description: Returns a directory tree of given path, the errors while building sub-tree will be ignored and result will not include the path that has errors. Client may have to stat some suspicious paths manually, if listing is not complete.
       operationId: dirTree
       security:
         - webida-simple-auth: []
@@ -260,9 +231,7 @@ paths:
     put:
       x-handler: handlers/wfs/createDir.js
       tags: ["wfs"]
-      description: |
-        create a directory at the path. returns error when wfsPath exists and not empty
-        this API always creates parent directories if needed.
+      description: Creates a directory at the path. When the path is found to be a directory, this api does not return error and does not care it's empty or not. Always creates parent directories if needed.
       operationId: createDir
       security:
         - webida-simple-auth: []
@@ -279,21 +248,13 @@ paths:
           schema:
             $ref: "#/definitions/RestError"
 
+  # WFS Any operations - stat & exist, copy, move, remove
   /wfs/{wfsId}/any/{wfsPath}:
     # stat
     get:
       x-handler: handlers/wfs/stat.js
       tags: ["wfs"]
-      description: |
-        Get stats of given path. (stat() returns "stats" object in node and POSIX system)
-        Since we've no ctime/atime in Stats class, some file system changing events will
-        send 'exactly same' stats object. This API should be called only when stats of some
-        file system path is stale for unknown reason (e.g. losting change events).
-        Use dirTree operation and session events to detect stats, if possible. This API
-        can be used to check a path is valid, existing one, but it's not recommended to
-        check existence of individual paths by API. Clients should use dirTree and session
-        events to synchorize some in-app file system with webida file system.
-
+      description: Get stats of given path. (stat() returns stats object in node and POSIX system). This API should be called only when stats of some file system path is stale for unknown reason (e.g. losting change events). Use dirTree operation and session events to detect stats, if possible. This API can be used to check a path is valid, existing one, but it's not recommended to check existence of individual paths by API. Clients should use dirTree and session events to synchorize some in-app file system with webida file system.
       operationId: stat
       security:
         - webida-simple-auth: []
@@ -303,10 +264,7 @@ paths:
         - name: ignoreError
           in: query
           required: false
-          description: |
-            flag to ignore stat errors to check existence only. If this flag is true,
-            server will returns 'DUMMY' type stats object instead of 404 error when
-            given path does not exists. (invalid wfsId will produce 400 error, not 404)
+          description: When true, operation ignore ENOENT error and returns DUMMY stats object instead of 404 error.
           type: boolean
           default: false
       responses:
@@ -324,18 +282,15 @@ paths:
       x-handler: handlers/wfs/copy.js
       tags: ["wfs"]
       description: |
-        Creates a copy of source to given path. Unlike cp command, wfsPath always denotes an exact
-        path of the resource to be created. So, copying a file to directory always returns error
-        and vice versa.
+        Creates a copy of source to given path. Unlike cp command, wfsPath always denotes an exact path of the resource to be created.
 
-        this operation creates the parents dir of destination path always, and does not
-        roll-back the creation when operation failed. So, clients should roll-back if needed.
+        So, When destination path exists already,
+          1) copying file to file : follows noOverwrite flag. (does not return error)
+          2) copying file to dir : returns 409 error
+          3) copying dir to file : returns 409 error
+          4) copying dir to dir : merge srcPath/* to wfsPath, following noOverwite flag.
 
-        When destination path exists already,
-        1) copying file to file : follows noOverwrite flag. (does not return error)
-        2) copying file to dir : returns 409 error
-        3) copying dir to file : returns 409 error
-        4) copying dir to dir : merge srcPath/* to wfsPath, following noOverwite flag.
+        This operation creates the parents dir of destination path always, and does not roll-back the creation when operation failed. So, clients should roll-back if needed.
 
       operationId: copy
       security:
@@ -371,20 +326,7 @@ paths:
     post:
       x-handler: handlers/wfs/move.js
       tags: ["wfs"]
-      description: |
-        Moves source resource to given path. Unlike mv command, wfsPath always denotes an exact
-        path of the resource to be created. So, moving a file to existing directory always
-        returns error and vice versa. (So, This API works like 'rename' rather than 'mv' command)
-
-        Like copy(), this operation creates parent path of destination, and does not roll-back
-        when operation failes.
-
-        When destination path exists already,
-        1) moving file to file : follows noOverwrite flag.
-        2) moving file to dir : returns 409 error
-        3) moving dir to file : returns 409 error
-        4) moving dir to dir : merge srcPath/* to wfsPath, following noOverwite flag.
-
+      description: Moves source resource to given path. Follows same rule to deal with existing path. So, this operation works like rename rather than mv. Just like copy(), this operations creates paraent dirs if needed and does not roll-back. Symbolic link and timestamp values will be moved without touching.
       operationId: move
       security:
         - webida-simple-auth: []
@@ -402,7 +344,6 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/RestError"
-
 
     # remove / delete
     delete:
@@ -431,8 +372,8 @@ paths:
           schema:
             $ref: "#/definitions/RestError"
 
-  # search
-  /wfs/{wfsId}/ops/search/{wfsPath}:
+  # WFS search operation
+  /wfs/{wfsId}/ops/search:
     get:
       x-handler: handlers/wfs/search.js
       tags: ["ops"]
@@ -442,7 +383,7 @@ paths:
         - webida-simple-auth: []
       parameters:
         - $ref: "#/parameters/wfsId"
-        - $ref: "#/parameters/wfsPath"
+        - $ref: "#/parameters/wfsPathList"
         - $ref: "#/parameters/pattern"
         - $ref: "#/parameters/ignoreCase"
       responses:
@@ -459,7 +400,7 @@ paths:
           schema:
             $ref: "#/definitions/RestError"
 
-  # replace
+  # WFS replace operation
   /wfs/{wfsId}/ops/replace:
     post:
       x-handler: handlers/wfs/replace.js
@@ -472,12 +413,12 @@ paths:
         - $ref: "#/parameters/wfsId"
         - $ref: "#/parameters/wfsPathList"
         - $ref: "#/parameters/pattern"
+        - $ref: "#/parameters/ignoreCase"
         - name: replaceTo
           in: query
           description: string to replace with
           type: string
           required: true
-        - $ref: "#/parameters/ignoreCase"
       responses:
         "200":
           description: done
@@ -488,36 +429,33 @@ paths:
           schema:
             $ref: "#/definitions/RestError"
 
-  # (local) workspace related apis
-  #  workspaces/
-  #   GET : get all local workspaces
-  #   POST : create single local workspace
+  #  workspace management operations
   #  workspaces/{workspaceId} - individual local workspaces
-  #   GET : get single workspace object
+  #   GET : find workspaces
+  #   POST: create workspace
   #   PUT : update single workspace
   #   DELETE : delete single workspace
-  #  workspaces/{workspaceId}/exec
-
-  /workspaces:
+  /workspaces/{workspaceId}:
     # findWorkspaces
     get:
       x-handler: handlers/workspace/findWorkspaces.js
       tags: ["workspace"]
-      description: | 
-        Finds workspaces (no find/search parameters yet). Requires an unrestricted access token.  
+      description: |
+        Finds workspaces with given id or parameters. if workspaceId = '*', all workspaces in server  are returned. No empty workspace id is allowed for it's a path parameter. When a workspace id is not '*' and non-existing workspace are requested, server should send 404 error and should ignore disposable parameter.
       operationId: findWorkspaces
       security:
         - webida-simple-auth: []
       parameters:
+        - $ref: "#/parameters/workspaceId"
         - name: disposable
           in: query
           required: false
-          description: include disposable workspaces or not
+          description: flag to include disposable workspaces or not, when workspaceId is '*'
           type: boolean
           default: false
       responses:
         "200":
-          description: array of local workspaces
+          description: array of local workspaces found
           schema:
             type: array
             items:
@@ -531,12 +469,15 @@ paths:
     post:
       x-handler: handlers/workspace/createWorkspace.js
       tags: ["workspace"]
-      description: | 
-        Creates a new workspace with given local path. Requires an unrestricted access token. 
+      description: |
+        Creates a new workspace with given local path. Requires an unrestricted access token. the workspace id parameter is ignored and will be replaced by new, unique value by server. it's recommended to set the value to simple, bogus one, like '*' or '-' (since it's path  parameter, empty value is not allowed. 404 error will be returned for the case). excludedPath will be set with default values, including .git/, bower_components/ and node_modules/
+
+        Needs an unrestricted access token.
       operationId: createWorkspace
       security:
         - webida-simple-auth: []
       parameters:
+        - $ref: "#/parameters/workspaceId"
         - name: localPath
           in: query
           required: true
@@ -562,42 +503,28 @@ paths:
           schema:
             $ref: "#/definitions/RestError"
 
-  /workspaces/{workspaceId}:
-    # getWorkspace
-    get:
-      x-handler: handlers/workspace/getWorkspace.js
-      tags: ["workspace"]
-      description: get a workspace object by id
-      operationId: getWorkspace
-      security:
-        - webida-simple-auth: []
-      parameters:
-        - $ref: "#/parameters/workspaceId"
-      responses:
-        "200":
-          description: the workspace
-          schema:
-            $ref: "#/definitions/Workspace"
-        default:
-          description: Error
-          schema:
-            $ref: "#/definitions/RestError"
-
     # update workspace
     put:
       x-handler: handlers/workspace/updateWorkspace.js
       tags: ["workspace"]
-      description: | 
-        Updates workspace. Some protected properties will not be changed by this api. Requires 
-        proper access rights in access token. 
+      description: |
+        Updates workspace. Some protected properties will not be changed by this op. If server cannot apply changed properties before returning workspace, such properties should not be updated with this operation. Clients should not rely on request body for further works, and should always check response to see what's changed actually.
+
+        Requires proper access rights.
       operationId: updateWorkspace
       security:
         - webida-simple-auth: []
       parameters:
         - $ref: "#/parameters/workspaceId"
+        - name: body
+          in: body
+          description: workspace object that contains updates
+          required: true
+          schema:
+            $ref: "#/definitions/Workspace"
       responses:
         "200":
-          description: updated Workspace object
+          description: updated Workspace object. some properties may different from input.
           schema:
             $ref: "#/definitions/Workspace"
         default:
@@ -610,13 +537,13 @@ paths:
       x-handler: handlers/workspace/removeWorkspace.js
       tags: ["workspace"]
       description: |
-        This operation will remove the requested workspace when
+        Removes a workspace. If no sessions are connected, this api 'works' before returning result. if some sesions are, workspace will be removed when
           1) all sessions are closed for request (will be notified by server)
-          2) excedded time limit value in closeAfter parameter
-          3) server goes down after accepting remove request
-        "willBeRemovedAt" property can be set "only" by this api.
-        This API requires "unrestricted" access token. Even an access token has matching
-        workspace id, removing an workspace is rejected.
+          2) exceeded time limit value in closeAfter parameter
+          3) server stops after accepting remove request
+        and willBeRemoved value is set. So, client may 'find' the workspace to be removed after calling this operation.
+
+        Requires "unrestricted" access rights.
       operationId: removeWorkspace
       security:
         - webida-simple-auth: []
@@ -628,29 +555,33 @@ paths:
           type: integer
           required: false
           default: 0
+        - name: expunge
+          in: query
+          description: Time in seconds to wait for all sessions save & close their data.
+          type: boolean
+          required: false
       responses:
         "200":
-          description: removed Workspace object
+          description: OK. removed
           schema:
-            $ref: "#/definitions/Workspace"
+            $ref: "#/definitions/RestOK"
         default:
           description: Error
           schema:
             $ref: "#/definitions/RestError"
 
+  # workspace - exec operations
+  #  workspaces/{workspaceId}/exec
+  #   GET : findProcs
+  #   POST: exec
+  #   DELETE : cancel (for async exec only)
   /workspaces/{workspaceId}/exec:
-
-    #getChildProcs
+    #findProcs
     get:
       x-handler: handlers/workspace/findProcs.js
       tags: ["workspace"]
       description: |
-        Gets process info, created by async exec request, on this workspace. If execId is set,
-        this op finds a spawned process whose id is matching. If not, all spawned procs will be
-        found. This op does not returns error when no procs found but empty result array.
-
-        This operation requires proper access rights. (unrestricted or matching workspace id in
-        access token with parameter)
+        Gets process info, created by async exec request, on this workspace. To find all spawned processes, set id to '*'. This op does not returns error when no procs found but empty result array.
       operationId: findProcs
       parameters:
         - $ref: "#/parameters/workspaceId"
@@ -671,7 +602,7 @@ paths:
     post:
       x-handler: handlers/workspace/exec.js
       tags: ["workspace"]
-      description: execute a shell command on this workspace. requires proper access rights.
+      description: Executes a shell command or spawns a background process on this workspace. Requires proper access rights.
       operationId: exec
       security:
         - webida-simple-auth: []
@@ -679,37 +610,23 @@ paths:
         - $ref: "#/parameters/workspaceId"
         - name: async
           in: query
-          description: |
-            Spawn a child process for given command and returns the created child proc info.
-            Actual output (stream of message) will be delivered to web socket channel, with
-            room id /sessions/async-{execId}
+          description: Spawns a child process for given command and returns the created child proc info. Actual output (stream of message) will be delivered to web socket channel, using execution id.
           type: boolean
           required: false
           default: false
         - name: body
           in: body
+          description: the process to be executed or spawned.
           required: true
           schema:
             $ref: "#/definitions/Execution"
       responses:
         "200":
-          description: |
-            Execution result with all captured standard ouput and error. If execution is completed
-            without error, cancelesponse#error should be a falsy value. If some error has happened,
-            then ExecutionResult#error (and #stderr, optionally) should be set. For other cases
-            (e.g. insufficient/invalid arguments), normal RestError should be returned with 4xx
-            or 5xx error code. client-side callback should distinguish from execution error from
-            plain RestError.
+          description: Execution result with all captured standard ouput and error. If execution is completed without error, the error property in result object should be a falsy value. If some error has happened, then it will be an error message, without stack. A plain RestError will be returned with 4xx or 5xx error code (e.g. insufficient/invalid arguments) when it's found before creating process. So, clients may handle the 'invocation error' and 'errors from the command' differently.
           schema:
             $ref: "#/definitions/ExecutionResult"
         "201":
-          description: |
-            spawned process infomation created by async execution. If server could not create
-            a child process, error event will be sent to client via socket channel but RestError
-            will not be ruturned from this operation. When a client has got 'error' event from
-            the socket channel, the client should close the channel wheather it receives subsequent
-            exit event or not (with some proper timeout if needed). Server should not send the
-            errors related to 'killing' child processes
+          description: Spawned process infomation created by async execution. If server could not create a child process, error event will be sent to client via socket channel but RestError will not be ruturned from this operation. When a client has got 'error' event from the socket channel, the client should close the channel wheather it receives subsequent exit event or not (with some proper timeout if needed). Server should not send the errors related to 'killing' child processes.
           schema:
             $ref: '#/definitions/ChildProcess'
         default:
@@ -720,9 +637,7 @@ paths:
     #cancel
     delete:
       tags: ["workspace"]
-      description: |
-        cancels an execution, if possible. Killing process may not be graceful. requires proper
-        access rights. if execId is not specified, this api does nothing.
+      description: Cancels executions, killing the spawned processes. To terminate all spawned processes, set execId to '*'. Requires proper access rights. Since killing a process usually takes a little bit long time, this api does not returns actual result but works in async manner. (So, client should listen to web socket channels for the processes). This operation Requires same access rights to exec().
       operationId: cancel
       security:
         - webida-simple-auth: []
@@ -739,26 +654,22 @@ paths:
           schema:
             $ref: "#/definitions/RestError"
 
-  #
-  # remote-access
+  # remote-access operations
   #   GET : get all remote workspaces" access info, registered to local server
   #   PUT : put (upsert) a remote workspace access info
   #   DELETE : delete single remote workspace" access info
-  #
   /remotes:
     # findRemoteAccess
     get:
       x-handler: handlers/remotes/findRemoteAccesses.js
       tags: ["remotes"]
-      description: |
-        Get all access informations See RemoteWorkspaceAccess definition for details (no fancy
-        find / search feature yet)
+      description: Get all access informations See RemoteWorkspaceAccess definition for details (no fancy find / search feature yet)
       operationId: findRemoteAccesses
       security:
         - webida-simple-auth: []
       responses:
         "200":
-          description: array of remote workspaces
+          description: Array of remote workspaces
           schema:
             type: array
             items:
@@ -771,7 +682,7 @@ paths:
     # putRemoteAccess
     put:
       tags: ["remotes"]
-      description: create or update a remote workspace access information
+      description: Ceates or updates a remote workspace access information
       operationId: putRemoteAccess
       security:
         - webida-simple-auth: []
@@ -794,7 +705,7 @@ paths:
     # removeRemoteWorkspace
     delete:
       tags: ["remotes"]
-      description: delete a remote workspace
+      description: Removes remote workspace access information
       operationId: removeRemoteAccess
       security:
         - webida-simple-auth: []
@@ -814,20 +725,26 @@ paths:
           schema:
             $ref: "#/definitions/RestError"
 
-  /sessions:
+  # session management operations
+  #  GET : find session
+  #  DELETE: close session
+  /sessions/{sessionId}:
+    # findSessions
     get:
       x-handler: handlers/session/findSessions.js
       tags: ["session"]
-      description: get all / some webida sessions established to server
+      description: |
+        Finds webida sessions established to server. if session id is given, matched session info will be returned and workspace id  parameter will be ignored. To find all sessions of some workspace, set session id to '*' and specify workspace id.
+
+        This operation requires proper accsss rights.
+          1) To find all sessions, an unrestricted token is required.
+          2) To find some workspace sesions, token should have proper access right on the workspace.
       operationId: findSessions
       security:
         - webida-simple-auth: []
       parameters:
-        - name: workspaceId
-          in: query
-          required: false
-          description: find only sessions working on some given workspace
-          type: string
+        - $ref: "#/parameters/sessionId"
+        - $ref: "#/parameters/workspaceIdQuery"
       responses:
         "200":
           description: array of sessions
@@ -840,44 +757,22 @@ paths:
           schema:
             $ref: "#/definitions/RestError"
 
-  # We dont define method POST here, for all sessions are made from web socket connections.
-  # And, we should separate ws connection end-point from API, for some servers may not be
-  # able to host web socket in api implementation.
-
-  /sessions/{sessionId}:
-    get:
-      x-handler: handlers/session/getSession.js
-      tags: ["session"]
-      description: get a session object by id
-      operationId: getSession
-      security:
-        - webida-simple-auth: []
-      parameters:
-        - $ref: "#/parameters/sessionId"
-      responses:
-        "200":
-          description: session
-          schema:
-            $ref: "#/definitions/Session"
-        default:
-          description: Error
-          schema:
-            $ref: "#/definitions/RestError"
-
+    # closeSessions
     delete:
       x-handler: handlers/session/closeSession.js
       tags: ["session"]
-      description: close session with timeout
-      operationId: closeSession
+      description: Closes session with timeout. Targets are selected by same rule to findSessions() op. While targeting multiple sessions, this operation requires same access rights with findSessions(). Closing a single session requires 'same session id' or 'unrestricted workspace acceess'.
+      operationId: closeSessions
       security:
         - webida-simple-auth: []
       parameters:
         - $ref: "#/parameters/sessionId"
+        - $ref: "#/parameters/workspaceIdQuery"
         - name: closeAfter
           in: query
           type: integer
           description: |
-            waiting time before actual closing, to let client save files and prevent reconnect
+            Waiting time before actual closing, to let client save files and prevent reconnecting.
           required: true
       responses:
         "200":
@@ -888,7 +783,78 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/RestError"
+    # no POST or PUT, for session should be created or updated by web-socket
 
+  /aliass/{aliasId}:
+    # findAliases
+    get:
+      x-handler: handlers/alias/findAliasesjs
+      tags: ["alias"]
+      description: get alias objects. set aliasId to '*' to find all aliases in some workspace. if alias id is given, only 0 or 1 matched alias object will be returned.
+      operationId: findAliases
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/aliasId"
+        - $ref: "#/parameters/workspaceIdQuery"
+      responses:
+        "200":
+          description: alias list
+          schema:
+            type: array
+            items:
+                $ref: "#/definitions/Alias"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    # putAlias
+    put:
+      x-handler: handlers/alias/putAlias.js
+      tags: ["alias"]
+      description: create, or update an alias.
+      operationId: putAlias
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/aliasId"
+        - name: body
+          in: body
+          description: alias object to write. should have same id to aliasId parameter.
+          required: true
+          schema:
+            $ref: "#/definitions/Alias"
+      responses:
+        "200":
+          description: OK.
+          schema:
+            $ref: "#/definitions/RestOK"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
+
+    # removeAliases
+    delete:
+      x-handler: handlers/alias/removeAlias.js
+      tags: ["alias"]
+      description: remove alias. targeting rule is same to findAliases() operation.
+      operationId: removeAliases
+      security:
+        - webida-simple-auth: []
+      parameters:
+        - $ref: "#/parameters/aliasId"
+        - $ref: "#/parameters/workspaceIdQuery"
+      responses:
+        "200":
+          description: OK.
+          schema:
+            $ref: "#/definitions/RestOK"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/RestError"
 
 securityDefinitions:
   webida-simple-auth:
@@ -908,8 +874,7 @@ parameters:
   wfsPath:
     name: wfsPath
     in: path
-    description: |
-      webida file system path to access. without heading /. should be placed at the end of path arguments
+    description: webida file system path to access. without heading /. should be placed at the end of path arguments
     required: true
     type: string
     pattern: .*
@@ -924,7 +889,7 @@ parameters:
   wfsPathList:
     name: wfsPathList
     in: query
-    description: array of wfsPath, with heading /  (collection format may be changed by implementation)
+    description: array of wfsPath, with heading /. (collectionFormat may be changed by implementation)
     required: true
     type: array
     items:
@@ -934,9 +899,7 @@ parameters:
   ensureParents:
     name: ensureParents
     in: query
-    description: |
-      A flag to create all parent directories to create file or dir, like mkdir -p. This parameter
-      does not create entire path, but creates to 'parent directory' of the path.
+    description:  A flag to create all parent directories to create file or dir, like mkdir -p. This parameter does not create entire path, but ensures 'parent directory' of the wfsPath parameter
     type: boolean
     required: false
     default: false
@@ -952,18 +915,14 @@ parameters:
   pattern:
     name: pattern
     in: query
-    description: |
-      regex pattern to match in search or replace.
-      In replace operation, pattern should be same to the parttern in search operation
+    description: regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation
     type: string
     required: true
 
   ignoreCase:
     name: ignoreCase
     in: query
-    description: |
-      regex matching option to ignore case.
-      In replace operation, this option should be same to one used in search operation
+    description: regex matching option to ignore case. In replace operation, this option should be same to one used in search operation
     type: boolean
     required: false
     default: false
@@ -975,17 +934,31 @@ parameters:
     required: true
     type: string
 
+  workspaceIdQuery:
+    name: workspaceId
+    in: query
+    description: webida workspace id in query part
+    required: true
+    type: string
+
   execId:
     name: execId
     in: query
-    description: the id of execution request(different from pid!)
+    description: the id from execution request (different from pid!)
     type: string
-    required: false
+    required: true
 
   sessionId:
     name: sessionId
     in: path
     description: webida session id (usually different from socket id from sock.io)
+    required: true
+    type: string
+
+  aliasId:
+    name: aliasId
+    in: path
+    description: url path fragment alias id. should have no '/' as well as any 'unsafe' chars for url path.  especially, '*' is reserved for finding operations or some other special case.
     required: true
     type: string
 
@@ -999,17 +972,17 @@ definitions:
 
   RestError:
     type: object
-    description: |
-      Error object with code and message. code is bound to status code, but not always same to
-      standard HTTP status text. For example, some 409 error may have code "Invalid Argument"
-      instead of "Conflic". So, Client should read message property to know what happend exactly
-      when an error is returned from server. And, some 500 errors can have system errno instead
-      of useless "internal". Like other errors, details are hidden in message.
+    description: Error object with code and message. code is bound to status code, but not always same to standard HTTP status text. For example, some 409 error may have code "Invalid Argument" instead of "Conflic". So, Client should read message property to know what happend exactly, when an error is returned from server. And, some 500 errors can have system errno instead of useless "internal". Like other errors, details are hidden in message.
     properties:
       code:
         type: string
       message:
         type: string
+      errno:
+        description: errno code for some internal errors in server. Since service implementation can use many different platform api & runtime, client should avoid relying on errno code.
+        type: string
+      stack:
+        description: stack trace for this error. Server should not include stack trace in production and client should not print or show this stack to user. This property should be used in 'developer mode' only, for debugging.
     required:
       - message
 
@@ -1027,9 +1000,7 @@ definitions:
           MASTER : used to create an access token from clients, without login credential
           ACCESS : protects api access. should be unique for each ide session
 
-          Note that here"s no REFRESH token, nor LOGIN token. The login api will create
-          unrestricted access token & master token pair. Desktop app has a side-way to
-          create an unrestricted master token before starting IDE instances.
+          Note that here"s no REFRESH token, nor LOGIN token. The login api will create unrestricted access token & master token pair. Desktop app has a side-way to create an unrestricted master token before starting IDE instances.
       expiresAt:
         type: string
         format: date-time
@@ -1050,7 +1021,7 @@ definitions:
 
   Credential:
     type: object
-    description: user credential to login. Use https to protect credential.
+    description: User credential to login. Use https to protect credential. master token can replace actual id/password pair.
     properties:
       loginId:
         type: string
@@ -1058,20 +1029,14 @@ definitions:
         type: string
       masterToken:
         type: string
-        description: |
-          a master token is issued when user wants to access webida api without id/password
-          from remote or local desktop app. When masterToken is set, client should put some
-          bogus id/password, non-empty. (The values can be used to identify client type)
+        description: A master token is issued when user wants to access webida api without id/password from remote or local desktop app. When masterToken is set, client should put some bogus id/password for login, non-empty. the values can be used to identify client type.
     required:
       - loginId
       - loginPassword
 
   User:
     type: object
-    description: |
-        Any services/products should define some admin apis to manage users in the system and
-        expose what should be exposed to client app. So, no properties are mandatory.
-        Currently, the properties are defined for compatiblity with legacy clients.
+    description: Any services/products should define some admin apis to manage users in the system and expose what should be exposed to client app. So, no properties are mandatory. Currently, the properties are defined for compatiblity with legacy clients.
     properties:
       id:
         type: string
@@ -1103,12 +1068,7 @@ definitions:
           - "FIFO"
           - "SOCKET"
           - "DUMMY"
-        description: |
-          All types except 'DUMMY' come from fs.Stats is*** methods results. (e.g. if isFile()
-          is true, then type will be 'FILE') If type is not decidable by the methods, default type
-          is 'FILE', for everything on the file system is basically a file. 'DUMMY' type means
-          that some object 'does not exist for now'. Client may use 'DUMMY' type to mark something
-          dangling, not written or created on real file system yet but visible to user.
+        description: All types except 'DUMMY' come from fs.Stats is*** methods results. (e.g. if isFile() is true, then type will be 'FILE') If type is not decidable by the methods, default type is 'FILE', for everything on the file system is basically a file. 'DUMMY' type means that some object 'does not exist for now'. Client may use 'DUMMY' type to mark something dangling, not written or created on real file system yet but visible to user.
       birthtime:
         type: string
         format: date-time
@@ -1173,62 +1133,38 @@ definitions:
         type: string
         format: date-time
       workspacePath:
-        description: absolute path of this workspace in server.
+        description: absolute path of this workspace in server. server may not expose this property to some untrusted clients.
         type: string
+      disposable:
+        description: |
+          If set, workspace is ephemeral - server will not keep persistence when it stops working. Ususally, side-loaded workspace via desktop app is disposable. Client with proper access right can flip this flag to declare the workspace should be persist.
+        type: boolean
       excludedPaths:
         description: |
-          glob patterns (Not regular expression!) or directory paths (Not a file path!) to
-          be excluded for watch service and search & replace operation. If a value has no '*'
-          char, it will be treated as directory path.
+          Ignore patterns to exclude from watch service and search-and-replace operations.
 
-          Like most of operation parameters, paths (and patterns not prefixed with '*') should
-          have relative, unixified form. If not, server should reject or discard the absolute
-           values.
+          Pattern follows '.gitignore' syntax, 1 item per line. It should work as a .gitignore file in the workspace directory. Server should remove all comment items (any item that begins with '#') and blank items. Escaping with '\' char for the beginning '!' and          ending white-spaces shoule be supported, too.
 
-          If a directory is specified to be excluded, watch service may deliver unlinkDir/addDir
-          events of the dir, but should not deliver any events from its sub-dirs and files.
-          Search and replace operation should ignore any files under the directory. If path
-          denotes a file, server may reject or discard the path.
-
-          Server should support basic glob pattern,  '**' and '*' in the glob pattern but not !
-          '!' prefix is optional. Client should not register any other extended glob features
-          that server does not support.
+          To exclude a directory, client may have to put '/' at the end of the item to exclude everything underneath it. When a dir path is excluded with 'ending /', watch service  may not deliver unlinkDir/addDir events for the path and client should manually check the existence or stats.
         type: array
         items:
           type: string
       offlineCachePaths:
         description: |
-          any paths (including excluded paths) to be cached in remote clients.
+          Any paths (including excluded paths) to be cached in remote clients.
 
-          Browser client should respect offline cache paths always. Desktop-app client
-          may not use off-line cache for local (embedded) server but shall use cache for any
-          remote servers, even for same host. All caches should be partitioned with workspace
-          id, globally unique value through time and space.
+          Browser client should respect offline cache paths always. Desktop-app client may not use off-line cache for local (embedded) server but shall use cache for any remote servers, even for same host. All caches should be partitioned with workspace id, globally unique value through time and space.
 
-          Client should pre-fetch the contents of offline cache paths when it start IDE sessions
-          on a workspace to use for off-line state. When client goes to off-line, after losing
-          connection to server, it can use cached data as reply of some WFS operations and can
-          write some data to cache to save workspace data & metadata. The changes should be
-          persistent on client side safely. C
+          Client should pre-fetch the contents of offline cache paths when it start IDE sessions on a workspace to use for off-line state. When client goes to off-line, after losing connection to server, it can use cached data as reply of some WFS operations and can write some data to cache to save workspace data & metadata. The changes should be persistent on client side safely. C
 
-          When a client recovers connectivity to server, it should check the stats of files and
-          dirs to upload if it has got some changes in offline state. If server has more recents
-          contents, client should drop chagnes and refill the cache with fresher data. Client may
-          have some 'time-tolerance' to accept server's data is fresher than client's, smaller than
-          serveral seconds. If server has more recent contents, client should drop the changes and
-          refill the cache with fresher data. If not, client should replay the changes 1 by 1.
+          When a client recovers connectivity to server, it should check the stats of files and  dirs to upload if it has got some changes in offline state. If server has more recents contents, client should drop chagnes and refill the cache with fresher data. Client may have some 'time-tolerance' to accept server's data is fresher than client's, smaller than serveral seconds. If server has more recent contents, client should drop the changes and refill the cache with fresher data. If not, client should replay the changes 1 by 1.
 
-          Same protocol should be applied when client application starts with some 'unuploaded
-          change' evertime. That means, client should save 'change history' with 'changed data'
-          too, to process it later, when starting app again in normal condition.
+          Same protocol should be applied when client application starts with some 'unuploaded change' evertime. That means, client should save 'change history' with 'changed data' too, to process it later, when starting app again in normal condition.
 
-          All Clients should not replay any 'delete' operations while replaying changes on client's
-          cache, to protect from more serious problems with skewed timer or unexpected behaviors.
-          And, of course, client should not rely on cached data while connection state is healthy.
+          All Clients should not replay any 'delete' operations while replaying changes on client's cache, to protect from more serious problems with skewed timer or unexpected behaviors. And, of course, client should not rely on cached data while connection state is healthy.
         type: array
         items:
           type: string
-
     required:
       - id
       - name
@@ -1243,20 +1179,16 @@ definitions:
     description: Access information of remote workspace in remote server
     properties:
       name:
-        description: |
-          display text of remote workspace. can be different from original name.
+        description: display text of remote workspace. can be different from original name.
         type: string
       serverUrl:
-        description: |
-          the url of remote server. Should have no path/query parameters, even "/" in path.
+        description: the url of remote server. Should have no path/query parameters, even "/" in path.
         type: string
       workspaceId:
         description: the id of remote workspace, read from remote server
         type: string
       workspacePath:
-        description: |
-          Full path of remote workspace, read from remote server. this property will be removed
-          when clients are able to work without "named root directory" in workspace fs tree.
+        description: Full path of remote workspace, read from remote server. this property will be removed when clients are able to work without "named root directory" in workspace fs tree.
         type: string
       masterToken:
         description: master token to access service, issued from remote server
@@ -1279,22 +1211,18 @@ definitions:
         type: string
       state:
         description: |
-          state of this session
           NORMAL = connected, normally working
           LOSING = disconnected, waiting reconnection. still accessible with api
           CLOSING = socket connection will close connection by server (clinet will be notified)
-          there"s no "CLOSED" / "LOST" state, for server will remove session object in registry
-          when the server closes connection or stops waiting for reconnection for timeout.
+
+          There"s no "CLOSED" / "LOST" state, for server will remove session object in registry  when the server closes connection or stops waiting for reconnection for timeout.
         type: string
         enum:
           - NORMAL
           - LOSING
           - CLOSING
       workspaceId:
-        description: |
-          the id of workspace that this sessions is working on. If falsy, then this session is
-          not belonged to any workpsace. Usually, dashboard / monitoring app will create a session
-          without workspace id.
+        description: the id of workspace that this sessions is working on. If falsy, then this session is not belonged to any workpsace. Usually, dashboard / monitoring app will create a session without workspace id.
         type: string
       clientAddress:
         description: the peer address of session connection. not always
@@ -1326,79 +1254,47 @@ definitions:
   Execution:
     type: object
     description: |
-      execution request, simlilar to node.js exec()/spawn(). see node.js documentation for
-      details of each properties. some properties are not configurable for portability
-         - encoding : fixed to utf-8
-         - shell : fixed to system defaults. (so, cmd.exe will be invoked in Windows OS, not sh
-                  or bash in git-for-windows even they are available.)
-         - killSignal : fixed to SIGTERM. If process does not die, server can send SIGKILL or
-                        invoke taskkill, to ensure chlid process is killed.
-         - uid & gid : will not be set for security
-         - stdio : all streams are handled by server. no options are avaliable to client.
-         - detached : always false
+      execution request, simlilar to node.js exec()/spawn(). see node.js documentation for  details of each properties. some properties are not configurable for portability
+       * encoding : fixed to utf-8
+       * shell : fixed to system defaults. (so, cmd.exe will be invoked in Windows OS, not sh or bash in git-for-windows even they are available.)
+       * killSignal : fixed to SIGTERM. If process does not die, server can send SIGKILL or invoke taskkill, to ensure chlid process is killed.
+       * uid & gid : will not be set for security
+       * stdio : all streams are handled by server. no options are avaliable to client.
+       * detached : always false
     properties:
       id:
-        description: |
-          unique identifier of execution, to demux response stream or cancel request.
-          Server should reject an async exec request without id.
+        description: unique identifier of execution, to demux response stream or cancel request. Server should reject an async exec request without id.
         type: string
       command:
-        description: |
-          The command to run. Server may not support pipe, redirection nor shell variables in
-          command. Client should not assume any 'specific shell' in server and should not
-          using the shell features for portability.
+        description: The command to run. Server may not support pipe, redirection nor shell variables in command. Client should not assume any specific shell provider in server and should not using the shell features for portability.
 
-          In windows system with unix sh (e.g. cygwin or mingw from git-for-windows), usually
-          a shell script in PATH may work as command but probably allocates console window while
-          running the command. Implementations (both of server & client) should avoid allocating
-          additional console device while running service for costs and UX,  and should provide
-          a portable way to invoke commands. Shortly, when a service/product embeds some
-          '.sh' file to run, it must provide '.cmd' file doing same thing, always.
+          In windows system with unix sh (e.g. cygwin or mingw from git-for-windows), usually a shell script in PATH may work as command but probably allocates console window while running the command. Implementations (both of server & client) should avoid allocating any  console instances while running services, for costs and UX, and should provide a portable way to invoke commands. Shortly, when a service/product embeds some .sh file to run, it must provide .cmd file doing same thing, always.
         type: string
       args:
         description: |
-          the arguments array. Server can join this args to command with proper white-space char,
-          when underlying platform api (e.g. child_process#exec() in node.js) does not support
-          additional arguments vector. It's recommended to use args vector than making a long
-          command, to find & see child processes easily with this Rest API. So, args should be
-          always provided, even empty array.
+          The arguments array. Server can join this args to command with proper white-space char, when underlying platform api (e.g. child_process#exec() in node.js) does not support additional arguments vector. It's recommended to use args vector than making a long command, to find & see child processes easily with this Rest API. So, args should be always provided, even empty array.
 
-          When some arguments has a white space (e.g. C:\Program Files\webida), usually invoking
-          command understands escaping or quotation, but not always. Client should add proper
-          escaping or quotation chars to args vector manually. server should not change any
-          command or arguments.
+          When some arguments has a white space (e.g. C:\Program Files\webida), usually invoking command understands escaping or quotation, but not always. Client should add proper escaping or quotation chars to args vector manually. server should not change any command or arguments.
         type: array
         items:
           type: string
       cwd:
-        description: |
-          Current working directory of spawned process, relative to workspace root. If abscent,
-          cwd will be the workspace directory. Does not accept any evaluatable form like
-          $HOME, %USERPROFILE%. path should be unixified. Server may reject an 'absolute'
-          property.
+        description: Current working directory of spawned process, relative to workspace root. If abscent, cwd will be the workspace directory. Does not accept any evaluatable form like $HOME, %USERPROFILE%. path should be unixified. Server may reject an absolute cwd path.
         type: string
       timeout:
-        description: |
-          The value which In 'miliseconds' the maximum amount of time the child is allowed
-          to run. (not idle time of stdout / stderr stream) for sync exec. Server should not
-          apply default value for async exec, when omitted. The child process spawned by async
-          execution should be killed when
+        description: The value which In 'miliseconds' the maximum amount of time the child is allowed to run. (not idle time of stdout / stderr stream) for sync exec. Server should not apply default value for async exec, when omitted. The child process spawned by async       execution should be killed when
            1) server goes down
            2) process exits by self
            3) cancel operation is invoked
         type: integer
         default: 60000
       maxBuffer:
-        description: |
-          Largest amount of data (in bytes) allowed on stdout or stderr for sync exec. Server
-          should not apply this limit to async execution. In sync exec, server may kill a
-          child process that has exceeded limit. default value is 512KB, large enough.
+        description: Largest amount of data (in bytes) allowed on stdout or stderr for sync exec. Server should not apply this limit to async execution. In sync exec, server may kill a child process that has exceeded limit. default value is 512KB, large enough.
         type: integer
         default: 524288
     required:
       - command
       - args
-
 
   ExecutionResult:
     type: object
@@ -1437,7 +1333,7 @@ definitions:
         type: string
       state:
         description: |
-          state of process. Where
+          State of process. Where
             CREATED - process is just created. no event has arrived yet
             WORKING - some output on stdout/stderr is arrived
             KILLING - sent kill signal, by cancel operation or error event from the process
@@ -1465,3 +1361,17 @@ definitions:
       - execId
       - state
       - startedAt
+
+  Alias:
+    type: object
+    description: alias to access file system using git or direct http requests who can't call swagger api with proper tokens
+    properties:
+      id:
+        description: id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for path should not be included, especially / char. ?, *, and other special characters for shell are not also allowed.
+        type: string
+      workspaceId:
+        description: id of the workspace that contains source of alias
+        type: string
+      sourcePath:
+        description: the source of alias, relative path to workspace root directory.
+        type: string

@@ -34,7 +34,7 @@
     if (!root.WebidaRestfulApi) {
       root.WebidaRestfulApi = {};
     }
-    root.WebidaRestfulApi.RestOK = factory(root.WebidaRestfulApi.ApiClient);
+    root.WebidaRestfulApi.Alias = factory(root.WebidaRestfulApi.ApiClient);
   }
 }(this, function(ApiClient) {
   'use strict';
@@ -43,44 +43,64 @@
 
 
   /**
-   * The RestOK model module.
-   * @module model/RestOK
+   * The Alias model module.
+   * @module model/Alias
    * @version 0.6.0
    */
 
   /**
-   * Constructs a new <code>RestOK</code>.
-   * @alias module:model/RestOK
+   * Constructs a new <code>Alias</code>.
+   * alias to access file system using git or direct http requests who can&#39;t call swagger api with proper tokens
+   * @alias module:model/Alias
    * @class
    */
   var exports = function() {
     var _this = this;
 
 
+
+
   };
 
   /**
-   * Constructs a <code>RestOK</code> from a plain JavaScript object, optionally creating a new instance.
+   * Constructs a <code>Alias</code> from a plain JavaScript object, optionally creating a new instance.
    * Copies all relevant properties from <code>data</code> to <code>obj</code> if supplied or a new instance if not.
    * @param {Object} data The plain JavaScript object bearing properties of interest.
-   * @param {module:model/RestOK} obj Optional instance to populate.
-   * @return {module:model/RestOK} The populated <code>RestOK</code> instance.
+   * @param {module:model/Alias} obj Optional instance to populate.
+   * @return {module:model/Alias} The populated <code>Alias</code> instance.
    */
   exports.constructFromObject = function(data, obj) {
     if (data) {
       obj = obj || new exports();
 
-      if (data.hasOwnProperty('message')) {
-        obj['message'] = ApiClient.convertToType(data['message'], 'String');
+      if (data.hasOwnProperty('id')) {
+        obj['id'] = ApiClient.convertToType(data['id'], 'String');
+      }
+      if (data.hasOwnProperty('workspaceId')) {
+        obj['workspaceId'] = ApiClient.convertToType(data['workspaceId'], 'String');
+      }
+      if (data.hasOwnProperty('sourcePath')) {
+        obj['sourcePath'] = ApiClient.convertToType(data['sourcePath'], 'String');
       }
     }
     return obj;
   }
 
   /**
-   * @member {String} message
+   * id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for path should not be included, especially / char. ?, *, and other special characters for shell are not also allowed.
+   * @member {String} id
    */
-  exports.prototype['message'] = undefined;
+  exports.prototype['id'] = undefined;
+  /**
+   * id of the workspace that contains source of alias
+   * @member {String} workspaceId
+   */
+  exports.prototype['workspaceId'] = undefined;
+  /**
+   * the source of alias, relative path to workspace root directory.
+   * @member {String} sourcePath
+   */
+  exports.prototype['sourcePath'] = undefined;
 
 
 

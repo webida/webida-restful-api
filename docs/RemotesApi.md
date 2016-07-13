@@ -15,7 +15,7 @@ Method | HTTP request | Description
 
 
 
-Get all access informations See RemoteWorkspaceAccess definition for details (no fancy find / search feature yet) 
+Get all access informations See RemoteWorkspaceAccess definition for details (no fancy find / search feature yet)
 
 ### Example
 ```javascript
@@ -62,7 +62,7 @@ This endpoint does not need any parameter.
 
 
 
-create or update a remote workspace access information
+Ceates or updates a remote workspace access information
 
 ### Example
 ```javascript
@@ -115,7 +115,7 @@ Name | Type | Description  | Notes
 
 
 
-delete a remote workspace
+Removes remote workspace access information
 
 ### Example
 ```javascript

@@ -39,7 +39,7 @@
   var instance;
 
   beforeEach(function() {
-    instance = new WebidaRestfulApi.Stats();
+    instance = new WebidaRestfulApi.Alias();
   });
 
   var getProperty = function(object, getter, property) {
@@ -58,46 +58,28 @@
       object[property] = value;
   }
 
-  describe('Stats', function() {
-    it('should create an instance of Stats', function() {
-      // uncomment below and update the code to test Stats
-      //var instane = new WebidaRestfulApi.Stats();
-      //expect(instance).to.be.a(WebidaRestfulApi.Stats);
+  describe('Alias', function() {
+    it('should create an instance of Alias', function() {
+      // uncomment below and update the code to test Alias
+      //var instane = new WebidaRestfulApi.Alias();
+      //expect(instance).to.be.a(WebidaRestfulApi.Alias);
     });
 
-    it('should have the property type (base name: "type")', function() {
-      // uncomment below and update the code to test the property type
-      //var instane = new WebidaRestfulApi.Stats();
+    it('should have the property id (base name: "id")', function() {
+      // uncomment below and update the code to test the property id
+      //var instane = new WebidaRestfulApi.Alias();
       //expect(instance).to.be();
     });
 
-    it('should have the property birthtime (base name: "birthtime")', function() {
-      // uncomment below and update the code to test the property birthtime
-      //var instane = new WebidaRestfulApi.Stats();
+    it('should have the property workspaceId (base name: "workspaceId")', function() {
+      // uncomment below and update the code to test the property workspaceId
+      //var instane = new WebidaRestfulApi.Alias();
       //expect(instance).to.be();
     });
 
-    it('should have the property mtime (base name: "mtime")', function() {
-      // uncomment below and update the code to test the property mtime
-      //var instane = new WebidaRestfulApi.Stats();
-      //expect(instance).to.be();
-    });
-
-    it('should have the property mode (base name: "mode")', function() {
-      // uncomment below and update the code to test the property mode
-      //var instane = new WebidaRestfulApi.Stats();
-      //expect(instance).to.be();
-    });
-
-    it('should have the property size (base name: "size")', function() {
-      // uncomment below and update the code to test the property size
-      //var instane = new WebidaRestfulApi.Stats();
-      //expect(instance).to.be();
-    });
-
-    it('should have the property nlink (base name: "nlink")', function() {
-      // uncomment below and update the code to test the property nlink
-      //var instane = new WebidaRestfulApi.Stats();
+    it('should have the property sourcePath (base name: "sourcePath")', function() {
+      // uncomment below and update the code to test the property sourcePath
+      //var instane = new WebidaRestfulApi.Alias();
       //expect(instance).to.be();
     });
 
