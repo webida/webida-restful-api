@@ -68,7 +68,7 @@
      * Creates a copy of source to given path. Unlike cp command, wfsPath always denotes an exact path of the resource to be created.  So, When destination path exists already,   1) copying file to file : follows noOverwrite flag. (does not return error)   2) copying file to dir : returns 409 error   3) copying dir to file : returns 409 error   4) copying dir to dir : merge srcPath/_* to wfsPath, following noOverwite flag.  This operation creates the parents dir of destination path always, and does not roll-back the creation when operation failed. So, clients should roll-back if needed. 
      * @param {String} wfsId webida file system id (same to workspace id) to access.
      * @param {String} wfsPath webida file system path to access. without heading /. should be placed at the end of path arguments
-     * @param {String} srcPath source data path of some operations, with have heading /
+     * @param {String} srcPath source data path of some operations, without have heading /
      * @param {Object} opts Optional parameters
      * @param {Boolean} opts.noOverwrite does not overwrites any existing file while copying or moving (default to false)
      * @param {Boolean} opts.followSymbolicLinks dereference symlinks in source. (default to false)
@@ -246,7 +246,7 @@
      * Moves source resource to given path. Follows same rule to deal with existing path. So, this operation works like rename rather than mv. Just like copy(), this operations creates paraent dirs if needed and does not roll-back. Symbolic link and timestamp values will be moved without touching.
      * @param {String} wfsId webida file system id (same to workspace id) to access.
      * @param {String} wfsPath webida file system path to access. without heading /. should be placed at the end of path arguments
-     * @param {String} srcPath source data path of some operations, with have heading /
+     * @param {String} srcPath source data path of some operations, without have heading /
      * @param {Object} opts Optional parameters
      * @param {Boolean} opts.noOverwrite does not overwrites any existing file while copying or moving (default to false)
      * @param {module:api/WfsApi~moveCallback} callback The callback function, accepting three arguments: error, data, response
@@ -309,10 +309,14 @@
      * read file data on path
      * @param {String} wfsId webida file system id (same to workspace id) to access.
      * @param {String} wfsPath webida file system path to access. without heading /. should be placed at the end of path arguments
+     * @param {Object} opts Optional parameters
+     * @param {String} opts.ifModifiedSince Usual if-modified-since header. So, should be RFC-1123(same to RFC-822) format, not RFC-3339 (same to ISO-8601).
+     * @param {String} opts.ifNoneMatch Usual if-non-match header, allowing only 1 e-tag value from previous readFile response, including weak prefix and quotation chars. This header value precedes if-modified-since, and server should ignore if-modified-since header when if-none-match header exists, as RFC-2616 declines.
      * @param {module:api/WfsApi~readFileCallback} callback The callback function, accepting three arguments: error, data, response
      * data is of type: {File}
      */
-    this.readFile = function(wfsId, wfsPath, callback) {
+    this.readFile = function(wfsId, wfsPath, opts, callback) {
+      opts = opts || {};
       var postBody = null;
 
       // verify the required parameter 'wfsId' is set
@@ -333,6 +337,8 @@
       var queryParams = {
       };
       var headerParams = {
+        'If-Modified-Since': opts['ifModifiedSince'],
+        'If-None-Match': opts['ifNoneMatch']
       };
       var formParams = {
       };
@@ -418,7 +424,7 @@
      * @param {String} wfsId webida file system id (same to workspace id) to access.
      * @param {String} wfsPath webida file system path to access. without heading /. should be placed at the end of path arguments
      * @param {Object} opts Optional parameters
-     * @param {Boolean} opts.ignoreError When true, operation ignore ENOENT error and returns DUMMY stats object instead of 404 error. (default to false)
+     * @param {Boolean} opts.dummyFor404 When true, operation ignore ENOENT error and returns DUMMY stats object instead of 404 error. (default to false)
      * @param {module:api/WfsApi~statCallback} callback The callback function, accepting three arguments: error, data, response
      * data is of type: {module:model/Stats}
      */
@@ -442,7 +448,7 @@
         'wfsPath': wfsPath
       };
       var queryParams = {
-        'ignoreError': opts['ignoreError']
+        'dummyFor404': opts['dummyFor404']
       };
       var headerParams = {
       };

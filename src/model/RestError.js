@@ -61,6 +61,7 @@
 
     _this['message'] = message;
 
+
   };
 
   /**
@@ -83,6 +84,9 @@
       if (data.hasOwnProperty('errno')) {
         obj['errno'] = ApiClient.convertToType(data['errno'], 'String');
       }
+      if (data.hasOwnProperty('stack')) {
+        obj['stack'] = ApiClient.convertToType(data['stack'], 'String');
+      }
     }
     return obj;
   }
@@ -96,10 +100,15 @@
    */
   exports.prototype['message'] = undefined;
   /**
-   * errno code for some internal errors in server. Since service implementation can use many different platform api & runtime, client should avoid relying on errno code.
+   * errno code for some internal errors in server. Since service implementation can use many different platform api & runtime, client should avoid relying on errno code. If server provides errno code, it should be translated into human readable string like ENOENT or ENOMEM, not pure integer value.
    * @member {String} errno
    */
   exports.prototype['errno'] = undefined;
+  /**
+   * stack trace for this error. Server should not include stack trace in production and client should not print or show this stack to user. This property should be used in 'developer mode' only, for debugging.
+   * @member {String} stack
+   */
+  exports.prototype['stack'] = undefined;
 
 
 

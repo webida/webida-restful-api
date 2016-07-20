@@ -56,7 +56,7 @@
    * @param type {module:model/Stats.TypeEnum} All types except 'DUMMY' come from fs.Stats is*** methods results. (e.g. if isFile() is true, then type will be 'FILE') If type is not decidable by the methods, default type is 'FILE', for everything on the file system is basically a file. 'DUMMY' type means that some object 'does not exist for now'. Client may use 'DUMMY' type to mark something dangling, not written or created on real file system yet but visible to user.
    * @param birthtime {Date} 
    * @param mtime {Date} 
-   * @param mode {String} 
+   * @param mode {Integer} 
    * @param size {Integer} 
    * @param nlink {Integer} 
    */
@@ -92,7 +92,7 @@
         obj['mtime'] = ApiClient.convertToType(data['mtime'], 'Date');
       }
       if (data.hasOwnProperty('mode')) {
-        obj['mode'] = ApiClient.convertToType(data['mode'], 'String');
+        obj['mode'] = ApiClient.convertToType(data['mode'], 'Integer');
       }
       if (data.hasOwnProperty('size')) {
         obj['size'] = ApiClient.convertToType(data['size'], 'Integer');
@@ -118,7 +118,7 @@
    */
   exports.prototype['mtime'] = undefined;
   /**
-   * @member {String} mode
+   * @member {Integer} mode
    */
   exports.prototype['mode'] = undefined;
   /**

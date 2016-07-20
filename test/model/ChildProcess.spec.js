@@ -95,6 +95,12 @@
       //expect(instance).to.be();
     });
 
+    it('should have the property foreground (base name: "foreground")', function() {
+      // uncomment below and update the code to test the property foreground
+      //var instane = new WebidaRestfulApi.ChildProcess();
+      //expect(instance).to.be();
+    });
+
     it('should have the property startedAt (base name: "startedAt")', function() {
       // uncomment below and update the code to test the property startedAt
       //var instane = new WebidaRestfulApi.ChildProcess();

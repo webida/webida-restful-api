@@ -50,16 +50,19 @@
 
   /**
    * Constructs a new <code>Alias</code>.
-   * alias to access file system using git or direct http requests who can&#39;t call swagger api with proper tokens
+   * alias to access file system using git or direct http(s) requests who can&#39;t call swagger api with proper tokens. Implemenations may provide some concrent url formats. Alias may be invalidated when the workspace it belongs is removed. Any removed alias will result 404 error or equivalent.
    * @alias module:model/Alias
    * @class
+   * @param id {String} id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for file system path should not be included. Windows OS prohibits following characters to be used in a file name.  < (less than)  > (greater than)  : (colon)  \" (double quote)  / (forward slash)  \\ (backslash)  | (vertical bar or pipe)  ? (question mark)  * (asterisk) 
+   * @param workspaceId {String} id of the workspace that contains source of alias
+   * @param sourcePath {String} the source of alias, relative path to workspace root directory.
    */
-  var exports = function() {
+  var exports = function(id, workspaceId, sourcePath) {
     var _this = this;
 
-
-
-
+    _this['id'] = id;
+    _this['workspaceId'] = workspaceId;
+    _this['sourcePath'] = sourcePath;
   };
 
   /**
@@ -87,7 +90,7 @@
   }
 
   /**
-   * id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for path should not be included, especially / char. ?, *, and other special characters for shell are not also allowed.
+   * id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for file system path should not be included. Windows OS prohibits following characters to be used in a file name.  < (less than)  > (greater than)  : (colon)  \" (double quote)  / (forward slash)  \\ (backslash)  | (vertical bar or pipe)  ? (question mark)  * (asterisk) 
    * @member {String} id
    */
   exports.prototype['id'] = undefined;

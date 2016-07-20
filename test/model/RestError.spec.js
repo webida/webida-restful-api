@@ -83,6 +83,12 @@
       //expect(instance).to.be();
     });
 
+    it('should have the property stack (base name: "stack")', function() {
+      // uncomment below and update the code to test the property stack
+      //var instane = new WebidaRestfulApi.RestError();
+      //expect(instance).to.be();
+    });
+
   });
 
 }));

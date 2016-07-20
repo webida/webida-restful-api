@@ -65,7 +65,7 @@
      */
 
     /**
-     * Cancels executions, killing the spawned processes. To terminate all spawned processes, set execId to &#39;*&#39;. Requires proper access rights. Since killing a process usually takes a little bit long time, this api does not returns actual result but works in async manner. (So, client should listen to web socket channels for the processes). This operation Requires same access rights to exec().
+     * Cancels executions, killing the spawned processes. To terminate all spawned processes, set execId to &#39;*&#39;. Requires proper access rights. Since killing a process usually takes a little bit long time, this api does not returns actual result but works in async manner. (So, client should listen to web socket channels for the processes). This operation Requires same access rights to execute operation. Server should reject to cancel any forground processes and processes is being killed or has exited already.
      * @param {String} workspaceId webida workspace id (usually same to file system id, wfsId)
      * @param {String} execId the id from execution request (different from pid!)
      * @param {module:api/WorkspaceApi~cancelCallback} callback The callback function, accepting three arguments: error, data, response
@@ -102,7 +102,7 @@
       var returnType = RestOK;
 
       return this.apiClient.callApi(
-        '/workspaces/{workspaceId}/exec', 'DELETE',
+        '/workspaces/{workspaceId}/procs', 'DELETE',
         pathParams, queryParams, headerParams, formParams, postBody,
         authNames, contentTypes, accepts, returnType, callback
       );
@@ -117,7 +117,7 @@
      */
 
     /**
-     * Creates a new workspace with given local path. Requires an unrestricted access token. the workspace id parameter is ignored and will be replaced by new, unique value by server. it&#39;s recommended to set the value to simple, bogus one, like &#39;*&#39; or &#39;-&#39; (since it&#39;s path  parameter, empty value is not allowed. 404 error will be returned for the case). excludedPath will be set with default values, including .git/, bower_components/ and node_modules/  Needs an unrestricted access token. 
+     * Creates a new workspace with given local path. Requires an unrestricted access token. the workspace id parameter is ignored and will be replaced by new, unique value by server. it&#39;s recommended to set the value to simple, bogus one, like &#39;*&#39; or &#39;-&#39; (since it&#39;s path  parameter, empty value is not allowed. excludedPath property is initialized with  default values (usually .git/, .node_modules/, ./bower_components) by server.  Needs an unrestricted access token. 
      * @param {String} workspaceId webida workspace id (usually same to file system id, wfsId)
      * @param {String} localPath a real, local path of the system (not unixified)
      * @param {String} name workspace name property
@@ -175,34 +175,34 @@
     }
 
     /**
-     * Callback function to receive the result of the exec operation.
-     * @callback module:api/WorkspaceApi~execCallback
+     * Callback function to receive the result of the execute operation.
+     * @callback module:api/WorkspaceApi~executeCallback
      * @param {String} error Error message, if any.
      * @param {module:model/ExecutionResult} data The data returned by the service call.
      * @param {String} response The complete HTTP response.
      */
 
     /**
-     * Executes a shell command or spawns a background process on this workspace. Requires proper access rights.
+     * Executes a shell command (foreground process) or spawns a background process on this workspace. Requires proper access rights.
      * @param {String} workspaceId webida workspace id (usually same to file system id, wfsId)
      * @param {module:model/Execution} body the process to be executed or spawned.
      * @param {Object} opts Optional parameters
-     * @param {Boolean} opts.async Spawns a child process for given command and returns the created child proc info. Actual output (stream of message) will be delivered to web socket channel, using execution id. (default to false)
-     * @param {module:api/WorkspaceApi~execCallback} callback The callback function, accepting three arguments: error, data, response
+     * @param {Boolean} opts.async Spawns a background process for given command and returns the created child proc info. Actual output (stream of message) will be delivered to web socket channel, using execution id. (default to false)
+     * @param {module:api/WorkspaceApi~executeCallback} callback The callback function, accepting three arguments: error, data, response
      * data is of type: {module:model/ExecutionResult}
      */
-    this.exec = function(workspaceId, body, opts, callback) {
+    this.execute = function(workspaceId, body, opts, callback) {
       opts = opts || {};
       var postBody = body;
 
       // verify the required parameter 'workspaceId' is set
       if (workspaceId == undefined || workspaceId == null) {
-        throw "Missing the required parameter 'workspaceId' when calling exec";
+        throw "Missing the required parameter 'workspaceId' when calling execute";
       }
 
       // verify the required parameter 'body' is set
       if (body == undefined || body == null) {
-        throw "Missing the required parameter 'body' when calling exec";
+        throw "Missing the required parameter 'body' when calling execute";
       }
 
 
@@ -223,7 +223,7 @@
       var returnType = ExecutionResult;
 
       return this.apiClient.callApi(
-        '/workspaces/{workspaceId}/exec', 'POST',
+        '/workspaces/{workspaceId}/procs', 'POST',
         pathParams, queryParams, headerParams, formParams, postBody,
         authNames, contentTypes, accepts, returnType, callback
       );
@@ -238,13 +238,16 @@
      */
 
     /**
-     * Gets process info, created by async exec request, on this workspace. To find all spawned processes, set id to &#39;*&#39;. This op does not returns error when no procs found but empty result array. 
+     * Gets process info on this workspace. To find all child processes, set id to &#39;*&#39;. This op does not returns error when no procs found but empty result array. Child process can be created by exec operation and by some other means. 
      * @param {String} workspaceId webida workspace id (usually same to file system id, wfsId)
      * @param {String} execId the id from execution request (different from pid!)
+     * @param {Object} opts Optional parameters
+     * @param {Boolean} opts.includeForeground flag to include &#39;foreground processes&#39; in result. foreground processes can be created by and only by exec operation without async opetion. normally, this flag will not be used except debugging or diagnostics. foreground processes has &#39;foreground&#39; property, set to true, always.
      * @param {module:api/WorkspaceApi~findProcsCallback} callback The callback function, accepting three arguments: error, data, response
      * data is of type: {Array.<module:model/ChildProcess>}
      */
-    this.findProcs = function(workspaceId, execId, callback) {
+    this.findProcs = function(workspaceId, execId, opts, callback) {
+      opts = opts || {};
       var postBody = null;
 
       // verify the required parameter 'workspaceId' is set
@@ -262,7 +265,8 @@
         'workspaceId': workspaceId
       };
       var queryParams = {
-        'execId': execId
+        'execId': execId,
+        'includeForeground': opts['includeForeground']
       };
       var headerParams = {
       };
@@ -275,7 +279,7 @@
       var returnType = [ChildProcess];
 
       return this.apiClient.callApi(
-        '/workspaces/{workspaceId}/exec', 'GET',
+        '/workspaces/{workspaceId}/procs', 'GET',
         pathParams, queryParams, headerParams, formParams, postBody,
         authNames, contentTypes, accepts, returnType, callback
       );
@@ -290,10 +294,10 @@
      */
 
     /**
-     * Finds workspaces with given id or parameters. if workspaceId &#x3D; &#39;*&#39;, all workspaces in server  are returned. No empty workspace id is allowed for it&#39;s a path parameter. When a workspace id is not &#39;*&#39; and non-existing workspace are requested, server should send 404 error and should ignore disposable parameter. 
+     * Finds workspaces with given id or parameters. if workspaceId &#x3D; &#39;*&#39;, all workspaces in server are returned. No empty workspace id is allowed for it&#39;s a path parameter. When workspaceId is not &#39;*&#39;, server should return empty array, not 404 Not Found error. 
      * @param {String} workspaceId webida workspace id (usually same to file system id, wfsId)
      * @param {Object} opts Optional parameters
-     * @param {Boolean} opts.disposable flag to include disposable workspaces or not, when workspaceId is &#39;*&#39; (default to false)
+     * @param {Boolean} opts.includeEphemeral flag to include ephemeral workspaces or not, when workspaceId is &#39;*&#39;. if workspace id is specified, then this flag will be ignored. (default to false)
      * @param {module:api/WorkspaceApi~findWorkspacesCallback} callback The callback function, accepting three arguments: error, data, response
      * data is of type: {Array.<module:model/Workspace>}
      */
@@ -311,7 +315,7 @@
         'workspaceId': workspaceId
       };
       var queryParams = {
-        'disposable': opts['disposable']
+        'includeEphemeral': opts['includeEphemeral']
       };
       var headerParams = {
       };
@@ -343,7 +347,7 @@
      * @param {String} workspaceId webida workspace id (usually same to file system id, wfsId)
      * @param {Object} opts Optional parameters
      * @param {Integer} opts.closeAfter Time in seconds to wait for all sessions save &amp; close their data. (default to 0)
-     * @param {Boolean} opts.expunge Time in seconds to wait for all sessions save &amp; close their data.
+     * @param {Boolean} opts.removeDir flag to delete directory in real file system when removing workspace. Usually, this value should not be set true for user can handle directory persistence manually. Clients need to get explicit confirmation from user.
      * @param {module:api/WorkspaceApi~removeWorkspaceCallback} callback The callback function, accepting three arguments: error, data, response
      * data is of type: {module:model/RestOK}
      */
@@ -362,7 +366,7 @@
       };
       var queryParams = {
         'closeAfter': opts['closeAfter'],
-        'expunge': opts['expunge']
+        'removeDir': opts['removeDir']
       };
       var headerParams = {
       };

@@ -20,9 +20,12 @@ java -jar swagger-codegen-cli.jar generate \
     -i $SPEC_DIR/swagger.yaml -l javascript \
     -t $TEMPLATES_DIR -o $API_DIR
 
-# rename generated README.md & restore original, then build with webpack
+# rename generated README.md & restore original
 cd $API_DIR
 mv README.md README-API.md
 mv README.md.tmp README.md
-npm install
-webpack --progress -p
+
+# building webpack bundle is not supported anymore. webida clients may build their own bundle
+# with wrappers and 3rd-party libs.
+# npm install
+# webpack --progress -p

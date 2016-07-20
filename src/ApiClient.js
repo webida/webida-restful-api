@@ -405,6 +405,11 @@
       request.accept(accept);
     }
 
+    // if api returns file, then it should be handled as blob
+    if (returnType === File) {
+        request.responseType('blob');
+    }
+
 
     request.end(function(error, response) {
       if (callback) {

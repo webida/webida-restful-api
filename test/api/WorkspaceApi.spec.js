@@ -79,10 +79,10 @@
         done();
       });
     });
-    describe('exec', function() {
-      it('should call exec successfully', function(done) {
-        //uncomment below and update the code to test exec
-        //instance.exec(pet, function(error) {
+    describe('execute', function() {
+      it('should call execute successfully', function(done) {
+        //uncomment below and update the code to test execute
+        //instance.execute(pet, function(error) {
         //  if (error) throw error;
         //expect().to.be();
         //});

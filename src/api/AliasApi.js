@@ -65,13 +65,14 @@
      */
 
     /**
-     * get alias objects. set aliasId to &#39;*&#39; to find all aliases in some workspace. if alias id is given, only 0 or 1 matched alias object will be returned.
+     * get alias objects. set aliasId to &#39;*&#39; to find all aliases in some workspace. If alias id is given, only 0 or 1 matched alias object will be returned, ignoring workspaceId and srcPath. To get an alias object of some wfs path, set srcPath value to some path, and to find all aliases in a workspace, set it to &#39;*&#39; (empty value is not allowed by definition)
      * @param {String} aliasId url path fragment alias id. should have no &#39;/&#39; as well as any &#39;unsafe&#39; chars for url path.  especially, &#39;*&#39; is reserved for finding operations or some other special case.
      * @param {String} workspaceId webida workspace id in query part
+     * @param {String} srcPath source data path of some operations, without have heading /
      * @param {module:api/AliasApi~findAliasesCallback} callback The callback function, accepting three arguments: error, data, response
      * data is of type: {Array.<module:model/Alias>}
      */
-    this.findAliases = function(aliasId, workspaceId, callback) {
+    this.findAliases = function(aliasId, workspaceId, srcPath, callback) {
       var postBody = null;
 
       // verify the required parameter 'aliasId' is set
@@ -84,12 +85,18 @@
         throw "Missing the required parameter 'workspaceId' when calling findAliases";
       }
 
+      // verify the required parameter 'srcPath' is set
+      if (srcPath == undefined || srcPath == null) {
+        throw "Missing the required parameter 'srcPath' when calling findAliases";
+      }
+
 
       var pathParams = {
         'aliasId': aliasId
       };
       var queryParams = {
-        'workspaceId': workspaceId
+        'workspaceId': workspaceId,
+        'srcPath': srcPath
       };
       var headerParams = {
       };
@@ -171,10 +178,11 @@
      * remove alias. targeting rule is same to findAliases() operation.
      * @param {String} aliasId url path fragment alias id. should have no &#39;/&#39; as well as any &#39;unsafe&#39; chars for url path.  especially, &#39;*&#39; is reserved for finding operations or some other special case.
      * @param {String} workspaceId webida workspace id in query part
+     * @param {String} srcPath source data path of some operations, without have heading /
      * @param {module:api/AliasApi~removeAliasesCallback} callback The callback function, accepting three arguments: error, data, response
      * data is of type: {module:model/RestOK}
      */
-    this.removeAliases = function(aliasId, workspaceId, callback) {
+    this.removeAliases = function(aliasId, workspaceId, srcPath, callback) {
       var postBody = null;
 
       // verify the required parameter 'aliasId' is set
@@ -187,12 +195,18 @@
         throw "Missing the required parameter 'workspaceId' when calling removeAliases";
       }
 
+      // verify the required parameter 'srcPath' is set
+      if (srcPath == undefined || srcPath == null) {
+        throw "Missing the required parameter 'srcPath' when calling removeAliases";
+      }
+
 
       var pathParams = {
         'aliasId': aliasId
       };
       var queryParams = {
-        'workspaceId': workspaceId
+        'workspaceId': workspaceId,
+        'srcPath': srcPath
       };
       var headerParams = {
       };

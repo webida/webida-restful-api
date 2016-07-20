@@ -11,11 +11,11 @@ Method | HTTP request | Description
 
 <a name="findAliases"></a>
 # **findAliases**
-> [Alias] findAliases(aliasId, workspaceId, )
+> [Alias] findAliases(aliasId, workspaceId, srcPath)
 
 
 
-get alias objects. set aliasId to &#39;*&#39; to find all aliases in some workspace. if alias id is given, only 0 or 1 matched alias object will be returned.
+get alias objects. set aliasId to &#39;*&#39; to find all aliases in some workspace. If alias id is given, only 0 or 1 matched alias object will be returned, ignoring workspaceId and srcPath. To get an alias object of some wfs path, set srcPath value to some path, and to find all aliases in a workspace, set it to &#39;*&#39; (empty value is not allowed by definition)
 
 ### Example
 ```javascript
@@ -34,6 +34,8 @@ var aliasId = "aliasId_example"; // String | url path fragment alias id. should 
 
 var workspaceId = "workspaceId_example"; // String | webida workspace id in query part
 
+var srcPath = "srcPath_example"; // String | source data path of some operations, without have heading /
+
 
 var callback = function(error, data, response) {
   if (error) {
@@ -42,7 +44,7 @@ var callback = function(error, data, response) {
     console.log('API called successfully. Returned data: ' + data);
   }
 };
-apiInstance.findAliases(aliasId, workspaceId, , callback);
+apiInstance.findAliases(aliasId, workspaceId, srcPath, callback);
 ```
 
 ### Parameters
@@ -51,6 +53,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **aliasId** | **String**| url path fragment alias id. should have no &#39;/&#39; as well as any &#39;unsafe&#39; chars for url path.  especially, &#39;*&#39; is reserved for finding operations or some other special case. | 
  **workspaceId** | **String**| webida workspace id in query part | 
+ **srcPath** | **String**| source data path of some operations, without have heading / | 
 
 ### Return type
 
@@ -123,7 +126,7 @@ Name | Type | Description  | Notes
 
 <a name="removeAliases"></a>
 # **removeAliases**
-> RestOK removeAliases(aliasId, workspaceId, )
+> RestOK removeAliases(aliasId, workspaceId, srcPath)
 
 
 
@@ -146,6 +149,8 @@ var aliasId = "aliasId_example"; // String | url path fragment alias id. should 
 
 var workspaceId = "workspaceId_example"; // String | webida workspace id in query part
 
+var srcPath = "srcPath_example"; // String | source data path of some operations, without have heading /
+
 
 var callback = function(error, data, response) {
   if (error) {
@@ -154,7 +159,7 @@ var callback = function(error, data, response) {
     console.log('API called successfully. Returned data: ' + data);
   }
 };
-apiInstance.removeAliases(aliasId, workspaceId, , callback);
+apiInstance.removeAliases(aliasId, workspaceId, srcPath, callback);
 ```
 
 ### Parameters
@@ -163,6 +168,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **aliasId** | **String**| url path fragment alias id. should have no &#39;/&#39; as well as any &#39;unsafe&#39; chars for url path.  especially, &#39;*&#39; is reserved for finding operations or some other special case. | 
  **workspaceId** | **String**| webida workspace id in query part | 
+ **srcPath** | **String**| source data path of some operations, without have heading / | 
 
 ### Return type
 

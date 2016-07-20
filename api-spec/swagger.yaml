@@ -160,11 +160,28 @@ paths:
       parameters:
         - $ref: "#/parameters/wfsId"
         - $ref: "#/parameters/wfsPath"
+        - name: If-Modified-Since
+          in: header
+          required: false
+          description: Usual if-modified-since header. So, should be RFC-1123(same to RFC-822) format, not RFC-3339 (same to ISO-8601).
+          type: string
+        - name: If-None-Match
+          in: header
+          required: false
+          description: Usual if-non-match header, allowing only 1 e-tag value from previous readFile response, including weak prefix and quotation chars. This header value precedes if-modified-since, and server should ignore if-modified-since header when if-none-match header exists, as RFC-2616 declines.
+          type: string
       responses:
         "200":
           description: File contents. Content-Type is application/octet-stream or follows file name extension.
           schema:
             type: file
+          headers:
+            ETag:
+              description: usual etag header in HTTP 1.1
+              type: string
+            Last-Modified:
+              description: usual last-modified header, in RFC-1123 format.
+              type: integer
         default:
           description: Error
           schema:
@@ -261,7 +278,7 @@ paths:
       parameters:
         - $ref: "#/parameters/wfsId"
         - $ref: "#/parameters/wfsPath"
-        - name: ignoreError
+        - name: dummyFor404
           in: query
           required: false
           description: When true, operation ignore ENOENT error and returns DUMMY stats object instead of 404 error.
@@ -441,16 +458,16 @@ paths:
       x-handler: handlers/workspace/findWorkspaces.js
       tags: ["workspace"]
       description: |
-        Finds workspaces with given id or parameters. if workspaceId = '*', all workspaces in server  are returned. No empty workspace id is allowed for it's a path parameter. When a workspace id is not '*' and non-existing workspace are requested, server should send 404 error and should ignore disposable parameter.
+        Finds workspaces with given id or parameters. if workspaceId = '*', all workspaces in server are returned. No empty workspace id is allowed for it's a path parameter. When workspaceId is not '*', server should return empty array, not 404 Not Found error.
       operationId: findWorkspaces
       security:
         - webida-simple-auth: []
       parameters:
         - $ref: "#/parameters/workspaceId"
-        - name: disposable
+        - name: includeEphemeral
           in: query
           required: false
-          description: flag to include disposable workspaces or not, when workspaceId is '*'
+          description: flag to include ephemeral workspaces or not, when workspaceId is '*'. if workspace id is specified, then this flag will be ignored.
           type: boolean
           default: false
       responses:
@@ -470,7 +487,7 @@ paths:
       x-handler: handlers/workspace/createWorkspace.js
       tags: ["workspace"]
       description: |
-        Creates a new workspace with given local path. Requires an unrestricted access token. the workspace id parameter is ignored and will be replaced by new, unique value by server. it's recommended to set the value to simple, bogus one, like '*' or '-' (since it's path  parameter, empty value is not allowed. 404 error will be returned for the case). excludedPath will be set with default values, including .git/, bower_components/ and node_modules/
+        Creates a new workspace with given local path. Requires an unrestricted access token. the workspace id parameter is ignored and will be replaced by new, unique value by server. it's recommended to set the value to simple, bogus one, like '*' or '-' (since it's path  parameter, empty value is not allowed. excludedPath property is initialized with  default values (usually .git/, .node_modules/, ./bower_components) by server.
 
         Needs an unrestricted access token.
       operationId: createWorkspace
@@ -555,9 +572,9 @@ paths:
           type: integer
           required: false
           default: 0
-        - name: expunge
+        - name: removeDir
           in: query
-          description: Time in seconds to wait for all sessions save & close their data.
+          description: flag to delete directory in real file system when removing workspace. Usually, this value should not be set true for user can handle directory persistence manually. Clients need to get explicit confirmation from user.
           type: boolean
           required: false
       responses:
@@ -575,17 +592,22 @@ paths:
   #   GET : findProcs
   #   POST: exec
   #   DELETE : cancel (for async exec only)
-  /workspaces/{workspaceId}/exec:
+  /workspaces/{workspaceId}/procs:
     #findProcs
     get:
       x-handler: handlers/workspace/findProcs.js
       tags: ["workspace"]
       description: |
-        Gets process info, created by async exec request, on this workspace. To find all spawned processes, set id to '*'. This op does not returns error when no procs found but empty result array.
+        Gets process info on this workspace. To find all child processes, set id to '*'. This op does not returns error when no procs found but empty result array. Child process can be created by exec operation and by some other means.
       operationId: findProcs
       parameters:
         - $ref: "#/parameters/workspaceId"
         - $ref: "#/parameters/execId"
+        - name: includeForeground
+          in: query
+          description: flag to include 'foreground processes' in result. foreground processes can be created by and only by exec operation without async opetion. normally, this flag will not be used except debugging or diagnostics. foreground processes has 'foreground' property, set to true, always.
+          type: boolean
+          required: false
       responses:
         "200":
           description: the child processes found. result does not include 'exited' procs.
@@ -600,17 +622,17 @@ paths:
 
     #exec
     post:
-      x-handler: handlers/workspace/exec.js
+      x-handler: handlers/workspace/execute.js
       tags: ["workspace"]
-      description: Executes a shell command or spawns a background process on this workspace. Requires proper access rights.
-      operationId: exec
+      description: Executes a shell command (foreground process) or spawns a background process on this workspace. Requires proper access rights.
+      operationId: execute
       security:
         - webida-simple-auth: []
       parameters:
         - $ref: "#/parameters/workspaceId"
         - name: async
           in: query
-          description: Spawns a child process for given command and returns the created child proc info. Actual output (stream of message) will be delivered to web socket channel, using execution id.
+          description: Spawns a background process for given command and returns the created child proc info. Actual output (stream of message) will be delivered to web socket channel, using execution id.
           type: boolean
           required: false
           default: false
@@ -622,7 +644,7 @@ paths:
             $ref: "#/definitions/Execution"
       responses:
         "200":
-          description: Execution result with all captured standard ouput and error. If execution is completed without error, the error property in result object should be a falsy value. If some error has happened, then it will be an error message, without stack. A plain RestError will be returned with 4xx or 5xx error code (e.g. insufficient/invalid arguments) when it's found before creating process. So, clients may handle the 'invocation error' and 'errors from the command' differently.
+          description: Execution result with all captured standard ouput and error. If execution is completed without error, the error property in result object should be a falsy value. If some error has happened, then it will be an error message, without stack. A plain RestError will be returned with 4xx or 5xx error code (e.g. insufficient/invalid arguments) when it's found before creating process. So, clients should handle the 'invocation error' and 'errors from the command' differently.
           schema:
             $ref: "#/definitions/ExecutionResult"
         "201":
@@ -637,7 +659,7 @@ paths:
     #cancel
     delete:
       tags: ["workspace"]
-      description: Cancels executions, killing the spawned processes. To terminate all spawned processes, set execId to '*'. Requires proper access rights. Since killing a process usually takes a little bit long time, this api does not returns actual result but works in async manner. (So, client should listen to web socket channels for the processes). This operation Requires same access rights to exec().
+      description: Cancels executions, killing the spawned processes. To terminate all spawned processes, set execId to '*'. Requires proper access rights. Since killing a process usually takes a little bit long time, this api does not returns actual result but works in async manner. (So, client should listen to web socket channels for the processes). This operation Requires same access rights to execute operation. Server should reject to cancel any forground processes and processes is being killed or has exited already.
       operationId: cancel
       security:
         - webida-simple-auth: []
@@ -790,13 +812,14 @@ paths:
     get:
       x-handler: handlers/alias/findAliasesjs
       tags: ["alias"]
-      description: get alias objects. set aliasId to '*' to find all aliases in some workspace. if alias id is given, only 0 or 1 matched alias object will be returned.
+      description: get alias objects. set aliasId to '*' to find all aliases in some workspace. If alias id is given, only 0 or 1 matched alias object will be returned, ignoring workspaceId and srcPath. To get an alias object of some wfs path, set srcPath value to some path, and to find all aliases in a workspace, set it to '*' (empty value is not allowed by definition)
       operationId: findAliases
       security:
         - webida-simple-auth: []
       parameters:
         - $ref: "#/parameters/aliasId"
         - $ref: "#/parameters/workspaceIdQuery"
+        - $ref: "#/parameters/srcPath"
       responses:
         "200":
           description: alias list
@@ -846,6 +869,7 @@ paths:
       parameters:
         - $ref: "#/parameters/aliasId"
         - $ref: "#/parameters/workspaceIdQuery"
+        - $ref: "#/parameters/srcPath"
       responses:
         "200":
           description: OK.
@@ -882,14 +906,14 @@ parameters:
   srcPath:
     name: srcPath
     in: query
-    description: source data path of some operations, with have heading /
+    description: source data path of some operations, without have heading /
     required: true
     type: string
 
   wfsPathList:
     name: wfsPathList
     in: query
-    description: array of wfsPath, with heading /. (collectionFormat may be changed by implementation)
+    description: array of wfsPath, without heading /.
     required: true
     type: array
     items:
@@ -968,6 +992,7 @@ definitions:
     type: object
     properties:
       message:
+        description: additional text from server. Clients may use this value to debugging or logging, but should not rely on the value of this property, for server can omit to set message for performance.
         type: string
 
   RestError:
@@ -979,10 +1004,11 @@ definitions:
       message:
         type: string
       errno:
-        description: errno code for some internal errors in server. Since service implementation can use many different platform api & runtime, client should avoid relying on errno code.
+        description: errno code for some internal errors in server. Since service implementation can use many different platform api & runtime, client should avoid relying on errno code. If server provides errno code, it should be translated into human readable string like ENOENT or ENOMEM, not pure integer value.
         type: string
       stack:
         description: stack trace for this error. Server should not include stack trace in production and client should not print or show this stack to user. This property should be used in 'developer mode' only, for debugging.
+        type: string
     required:
       - message
 
@@ -1076,7 +1102,7 @@ definitions:
         type: string
         format: date-time
       mode:
-        type: string
+        type: integer
       size:
         type: integer
       nlink:
@@ -1133,17 +1159,17 @@ definitions:
         type: string
         format: date-time
       workspacePath:
-        description: absolute path of this workspace in server. server may not expose this property to some untrusted clients.
+        description: absolute path of this workspace in server. Server may not expose this property to some untrusted clients.
         type: string
-      disposable:
+      ephemeral:
         description: |
-          If set, workspace is ephemeral - server will not keep persistence when it stops working. Ususally, side-loaded workspace via desktop app is disposable. Client with proper access right can flip this flag to declare the workspace should be persist.
+          If set, workspace is ephemeral - Server will drop registration when it stops working. Ususally, side-loaded workspace via desktop app is ephemeral. Client with proper access right can flip this flag to declare the workspace should be persist, after rebooting.
         type: boolean
       excludedPaths:
         description: |
           Ignore patterns to exclude from watch service and search-and-replace operations.
 
-          Pattern follows '.gitignore' syntax, 1 item per line. It should work as a .gitignore file in the workspace directory. Server should remove all comment items (any item that begins with '#') and blank items. Escaping with '\' char for the beginning '!' and          ending white-spaces shoule be supported, too.
+          Pattern follows '.gitignore' syntax, 1 item per line. It should work as a .gitignore file in the workspace directory. Server should remove all comment items (any item that begins with '#') and blank items. Escaping with '\' char for the beginning '!' and ending white-spaces shoule be supported, too.
 
           To exclude a directory, client may have to put '/' at the end of the item to exclude everything underneath it. When a dir path is excluded with 'ending /', watch service  may not deliver unlinkDir/addDir events for the path and client should manually check the existence or stats.
         type: array
@@ -1315,7 +1341,7 @@ definitions:
 
   ChildProcess:
     type: object
-    description: a process in execution, spawned by async exec or other mean
+    description: a process in execution, spawned by exec or other means.
     properties:
       pid:
         description: child process pid
@@ -1334,16 +1360,19 @@ definitions:
       state:
         description: |
           State of process. Where
-            CREATED - process is just created. no event has arrived yet
-            WORKING - some output on stdout/stderr is arrived
-            KILLING - sent kill signal, by cancel operation or error event from the process
-            EXITED  - process has exited.
+            CREATED - process is just created. no event has arrived yet.
+            WORKING - some output on stdout/stderr is arrived.
+            KILLING - sent kill signal, by cancel operation or some critical error event from the process. Invoking cancel operation to a process being killed should return error.
+            EXITED  - This process has exited already. Server is cleaning up the resources and not complete yet. Client should not expect that every exited process can be found with findProcs(). As KILLING state, cancellation will be rejected.
         type: string
         enum:
           - CREATED
           - WORKING
           - KILLING
           - EXITED
+      foreground:
+        description: if is true, this process is created from synchronous exec request. Som
+        type: boolean
       startedAt:
         description: the time when this process is spawned
         type: string
@@ -1352,7 +1381,7 @@ definitions:
         description: the exit code of child process. available with EXITED procs only.
         type: integer
       exitSignal:
-        description: the signal that killed this child process.(not always available)
+        description: the signal named that killed this child process.(not always available)
         type: string
     required:
       - pid
@@ -1360,14 +1389,25 @@ definitions:
       - args
       - execId
       - state
+      - foreground
       - startedAt
 
   Alias:
     type: object
-    description: alias to access file system using git or direct http requests who can't call swagger api with proper tokens
+    description: alias to access file system using git or direct http(s) requests who can't call swagger api with proper tokens. Implemenations may provide some concrent url formats. Alias may be invalidated when the workspace it belongs is removed. Any removed alias will result 404 error or equivalent.
     properties:
       id:
-        description: id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for path should not be included, especially / char. ?, *, and other special characters for shell are not also allowed.
+        description: |
+          id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for file system path should not be included. Windows OS prohibits following characters to be used in a file name.
+           < (less than)
+           > (greater than)
+           : (colon)
+           " (double quote)
+           / (forward slash)
+           \ (backslash)
+           | (vertical bar or pipe)
+           ? (question mark)
+           * (asterisk)
         type: string
       workspaceId:
         description: id of the workspace that contains source of alias
@@ -1375,3 +1415,7 @@ definitions:
       sourcePath:
         description: the source of alias, relative path to workspace root directory.
         type: string
+    required:
+      - id
+      - workspaceId
+      - sourcePath

@@ -67,7 +67,7 @@
     /**
      * replace file contents with regex matching
      * @param {String} wfsId webida file system id (same to workspace id) to access.
-     * @param {Array.<String>} wfsPathList array of wfsPath, with heading /. (collectionFormat may be changed by implementation)
+     * @param {Array.<String>} wfsPathList array of wfsPath, without heading /.
      * @param {String} pattern regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation
      * @param {String} replaceTo string to replace with
      * @param {Object} opts Optional parameters
@@ -137,7 +137,7 @@
     /**
      * search files in some path, with given pattern
      * @param {String} wfsId webida file system id (same to workspace id) to access.
-     * @param {Array.<String>} wfsPathList array of wfsPath, with heading /. (collectionFormat may be changed by implementation)
+     * @param {Array.<String>} wfsPathList array of wfsPath, without heading /.
      * @param {String} pattern regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation
      * @param {Object} opts Optional parameters
      * @param {Boolean} opts.ignoreCase regex matching option to ignore case. In replace operation, this option should be same to one used in search operation (default to false)

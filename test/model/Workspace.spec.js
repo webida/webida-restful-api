@@ -101,8 +101,8 @@
       //expect(instance).to.be();
     });
 
-    it('should have the property disposable (base name: "disposable")', function() {
-      // uncomment below and update the code to test the property disposable
+    it('should have the property ephemeral (base name: "ephemeral")', function() {
+      // uncomment below and update the code to test the property ephemeral
       //var instane = new WebidaRestfulApi.Workspace();
       //expect(instance).to.be();
     });

@@ -4,7 +4,7 @@ This SDK Contains automatically generated sources & documents with the [Swagger 
 
 - API version: 0.6.0
 - Package version: 0.6.0
-- Build date: 2016-07-13T17:50:12.792+09:00
+- Build date: 2016-07-20T21:57:26.763+09:00
 - Build package: class io.swagger.codegen.languages.JavascriptClientCodegen
 
 ## Getting Started
@@ -26,6 +26,8 @@ var aliasId = "aliasId_example"; // {String} url path fragment alias id. should 
 
 var workspaceId = "workspaceId_example"; // {String} webida workspace id in query part
 
+var srcPath = "srcPath_example"; // {String} source data path of some operations, without have heading /
+
 
 var callback = function(error, data, response) {
   if (error) {
@@ -34,7 +36,7 @@ var callback = function(error, data, response) {
     console.log('API called successfully. Returned data: ' + data);
   }
 };
-api.findAliases(aliasId, workspaceId, , callback);
+api.findAliases(aliasId, workspaceId, srcPath, callback);
 
 ```
 
@@ -67,10 +69,10 @@ Class | Method | HTTP request | Description
 *WebidaRestfulApi.WfsApi* | [**remove**](docs/WfsApi.md#remove) | **DELETE** /wfs/{wfsId}/any/{wfsPath} | 
 *WebidaRestfulApi.WfsApi* | [**stat**](docs/WfsApi.md#stat) | **GET** /wfs/{wfsId}/any/{wfsPath} | 
 *WebidaRestfulApi.WfsApi* | [**writeFile**](docs/WfsApi.md#writeFile) | **PUT** /wfs/{wfsId}/file/{wfsPath} | 
-*WebidaRestfulApi.WorkspaceApi* | [**cancel**](docs/WorkspaceApi.md#cancel) | **DELETE** /workspaces/{workspaceId}/exec | 
+*WebidaRestfulApi.WorkspaceApi* | [**cancel**](docs/WorkspaceApi.md#cancel) | **DELETE** /workspaces/{workspaceId}/procs | 
 *WebidaRestfulApi.WorkspaceApi* | [**createWorkspace**](docs/WorkspaceApi.md#createWorkspace) | **POST** /workspaces/{workspaceId} | 
-*WebidaRestfulApi.WorkspaceApi* | [**exec**](docs/WorkspaceApi.md#exec) | **POST** /workspaces/{workspaceId}/exec | 
-*WebidaRestfulApi.WorkspaceApi* | [**findProcs**](docs/WorkspaceApi.md#findProcs) | **GET** /workspaces/{workspaceId}/exec | 
+*WebidaRestfulApi.WorkspaceApi* | [**execute**](docs/WorkspaceApi.md#execute) | **POST** /workspaces/{workspaceId}/procs | 
+*WebidaRestfulApi.WorkspaceApi* | [**findProcs**](docs/WorkspaceApi.md#findProcs) | **GET** /workspaces/{workspaceId}/procs | 
 *WebidaRestfulApi.WorkspaceApi* | [**findWorkspaces**](docs/WorkspaceApi.md#findWorkspaces) | **GET** /workspaces/{workspaceId} | 
 *WebidaRestfulApi.WorkspaceApi* | [**removeWorkspace**](docs/WorkspaceApi.md#removeWorkspace) | **DELETE** /workspaces/{workspaceId} | 
 *WebidaRestfulApi.WorkspaceApi* | [**updateWorkspace**](docs/WorkspaceApi.md#updateWorkspace) | **PUT** /workspaces/{workspaceId} | 
