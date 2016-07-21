@@ -2,7 +2,7 @@
   "swagger" : "2.0",
   "info" : {
     "description" : "Restful API for Webida clients to use server's data & features",
-    "version" : "0.6.0",
+    "version" : "0.7.0",
     "title" : "Webida Restful API",
     "license" : {
       "name" : "Apache 2.0",
