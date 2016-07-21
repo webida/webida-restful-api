@@ -31,7 +31,7 @@ var apiInstance = new WebidaRestfulApi.OpsApi();
 
 var wfsId = "wfsId_example"; // String | webida file system id (same to workspace id) to access.
 
-var wfsPathList = ["wfsPathList_example"]; // [String] | array of wfsPath, with heading /. (collectionFormat may be changed by implementation)
+var wfsPathList = ["wfsPathList_example"]; // [String] | array of wfsPath, without heading /.
 
 var pattern = "pattern_example"; // String | regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation
 
@@ -56,7 +56,7 @@ apiInstance.replace(wfsId, wfsPathList, patternreplaceTo, opts, callback);
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
- **wfsPathList** | [**[String]**](String.md)| array of wfsPath, with heading /. (collectionFormat may be changed by implementation) | 
+ **wfsPathList** | [**[String]**](String.md)| array of wfsPath, without heading /. | 
  **pattern** | **String**| regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation | 
  **replaceTo** | **String**| string to replace with | 
  **ignoreCase** | **Boolean**| regex matching option to ignore case. In replace operation, this option should be same to one used in search operation | [optional] [default to false]
@@ -97,7 +97,7 @@ var apiInstance = new WebidaRestfulApi.OpsApi();
 
 var wfsId = "wfsId_example"; // String | webida file system id (same to workspace id) to access.
 
-var wfsPathList = ["wfsPathList_example"]; // [String] | array of wfsPath, with heading /. (collectionFormat may be changed by implementation)
+var wfsPathList = ["wfsPathList_example"]; // [String] | array of wfsPath, without heading /.
 
 var pattern = "pattern_example"; // String | regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation
 
@@ -120,7 +120,7 @@ apiInstance.search(wfsId, wfsPathList, pattern, opts, callback);
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
- **wfsPathList** | [**[String]**](String.md)| array of wfsPath, with heading /. (collectionFormat may be changed by implementation) | 
+ **wfsPathList** | [**[String]**](String.md)| array of wfsPath, without heading /. | 
  **pattern** | **String**| regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation | 
  **ignoreCase** | **Boolean**| regex matching option to ignore case. In replace operation, this option should be same to one used in search operation | [optional] [default to false]
 

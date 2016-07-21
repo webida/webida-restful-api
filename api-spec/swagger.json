@@ -2,7 +2,7 @@
   "swagger" : "2.0",
   "info" : {
     "description" : "Restful API for Webida clients to use server's data & features",
-    "version" : "0.6.0",
+    "version" : "0.7.0",
     "title" : "Webida Restful API",
     "license" : {
       "name" : "Apache 2.0",
@@ -16,7 +16,7 @@
     "/aliass/{aliasId}" : {
       "get" : {
         "tags" : [ "alias" ],
-        "description" : "get alias objects. set aliasId to '*' to find all aliases in some workspace. if alias id is given, only 0 or 1 matched alias object will be returned.",
+        "description" : "get alias objects. set aliasId to '*' to find all aliases in some workspace. If alias id is given, only 0 or 1 matched alias object will be returned, ignoring workspaceId and srcPath. To get an alias object of some wfs path, set srcPath value to some path, and to find all aliases in a workspace, set it to '*' (empty value is not allowed by definition)",
         "operationId" : "findAliases",
         "parameters" : [ {
           "name" : "aliasId",
@@ -28,6 +28,12 @@
           "name" : "workspaceId",
           "in" : "query",
           "description" : "webida workspace id in query part",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "srcPath",
+          "in" : "query",
+          "description" : "source data path of some operations, without have heading /",
           "required" : true,
           "type" : "string"
         } ],
@@ -105,6 +111,12 @@
           "name" : "workspaceId",
           "in" : "query",
           "description" : "webida workspace id in query part",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "srcPath",
+          "in" : "query",
+          "description" : "source data path of some operations, without have heading /",
           "required" : true,
           "type" : "string"
         } ],
@@ -418,7 +430,7 @@
           "type" : "string",
           "pattern" : ".*"
         }, {
-          "name" : "ignoreError",
+          "name" : "dummyFor404",
           "in" : "query",
           "description" : "When true, operation ignore ENOENT error and returns DUMMY stats object instead of 404 error.",
           "required" : false,
@@ -464,7 +476,7 @@
         }, {
           "name" : "srcPath",
           "in" : "query",
-          "description" : "source data path of some operations, with have heading /",
+          "description" : "source data path of some operations, without have heading /",
           "required" : true,
           "type" : "string"
         }, {
@@ -514,7 +526,7 @@
         }, {
           "name" : "srcPath",
           "in" : "query",
-          "description" : "source data path of some operations, with have heading /",
+          "description" : "source data path of some operations, without have heading /",
           "required" : true,
           "type" : "string"
         }, {
@@ -703,12 +715,34 @@
           "required" : true,
           "type" : "string",
           "pattern" : ".*"
+        }, {
+          "name" : "If-Modified-Since",
+          "in" : "header",
+          "description" : "Usual if-modified-since header. So, should be RFC-1123(same to RFC-822) format, not RFC-3339 (same to ISO-8601).",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "If-None-Match",
+          "in" : "header",
+          "description" : "Usual if-non-match header, allowing only 1 e-tag value from previous readFile response, including weak prefix and quotation chars. This header value precedes if-modified-since, and server should ignore if-modified-since header when if-none-match header exists, as RFC-2616 declines.",
+          "required" : false,
+          "type" : "string"
         } ],
         "responses" : {
           "200" : {
             "description" : "File contents. Content-Type is application/octet-stream or follows file name extension.",
             "schema" : {
               "type" : "file"
+            },
+            "headers" : {
+              "ETag" : {
+                "type" : "string",
+                "description" : "usual etag header in HTTP 1.1"
+              },
+              "Last-Modified" : {
+                "type" : "integer",
+                "description" : "usual last-modified header, in RFC-1123 format."
+              }
             }
           },
           "default" : {
@@ -789,7 +823,7 @@
         }, {
           "name" : "wfsPathList",
           "in" : "query",
-          "description" : "array of wfsPath, with heading /. (collectionFormat may be changed by implementation)",
+          "description" : "array of wfsPath, without heading /.",
           "required" : true,
           "type" : "array",
           "items" : {
@@ -850,7 +884,7 @@
         }, {
           "name" : "wfsPathList",
           "in" : "query",
-          "description" : "array of wfsPath, with heading /. (collectionFormat may be changed by implementation)",
+          "description" : "array of wfsPath, without heading /.",
           "required" : true,
           "type" : "array",
           "items" : {
@@ -900,7 +934,7 @@
     "/workspaces/{workspaceId}" : {
       "get" : {
         "tags" : [ "workspace" ],
-        "description" : "Finds workspaces with given id or parameters. if workspaceId = '*', all workspaces in server  are returned. No empty workspace id is allowed for it's a path parameter. When a workspace id is not '*' and non-existing workspace are requested, server should send 404 error and should ignore disposable parameter.\n",
+        "description" : "Finds workspaces with given id or parameters. if workspaceId = '*', all workspaces in server are returned. No empty workspace id is allowed for it's a path parameter. When workspaceId is not '*', server should return empty array, not 404 Not Found error.\n",
         "operationId" : "findWorkspaces",
         "parameters" : [ {
           "name" : "workspaceId",
@@ -909,9 +943,9 @@
           "required" : true,
           "type" : "string"
         }, {
-          "name" : "disposable",
+          "name" : "includeEphemeral",
           "in" : "query",
-          "description" : "flag to include disposable workspaces or not, when workspaceId is '*'",
+          "description" : "flag to include ephemeral workspaces or not, when workspaceId is '*'. if workspace id is specified, then this flag will be ignored.",
           "required" : false,
           "type" : "boolean",
           "default" : false
@@ -940,7 +974,7 @@
       },
       "post" : {
         "tags" : [ "workspace" ],
-        "description" : "Creates a new workspace with given local path. Requires an unrestricted access token. the workspace id parameter is ignored and will be replaced by new, unique value by server. it's recommended to set the value to simple, bogus one, like '*' or '-' (since it's path  parameter, empty value is not allowed. 404 error will be returned for the case). excludedPath will be set with default values, including .git/, bower_components/ and node_modules/\n\nNeeds an unrestricted access token.\n",
+        "description" : "Creates a new workspace with given local path. Requires an unrestricted access token. the workspace id parameter is ignored and will be replaced by new, unique value by server. it's recommended to set the value to simple, bogus one, like '*' or '-' (since it's path  parameter, empty value is not allowed. excludedPath property is initialized with  default values (usually .git/, .node_modules/, ./bower_components) by server.\n\nNeeds an unrestricted access token.\n",
         "operationId" : "createWorkspace",
         "parameters" : [ {
           "name" : "workspaceId",
@@ -1042,9 +1076,9 @@
           "type" : "integer",
           "default" : 0
         }, {
-          "name" : "expunge",
+          "name" : "removeDir",
           "in" : "query",
-          "description" : "Time in seconds to wait for all sessions save & close their data.",
+          "description" : "flag to delete directory in real file system when removing workspace. Usually, this value should not be set true for user can handle directory persistence manually. Clients need to get explicit confirmation from user.",
           "required" : false,
           "type" : "boolean"
         } ],
@@ -1068,10 +1102,10 @@
         "x-handler" : "handlers/workspace/removeWorkspace.js"
       }
     },
-    "/workspaces/{workspaceId}/exec" : {
+    "/workspaces/{workspaceId}/procs" : {
       "get" : {
         "tags" : [ "workspace" ],
-        "description" : "Gets process info, created by async exec request, on this workspace. To find all spawned processes, set id to '*'. This op does not returns error when no procs found but empty result array.\n",
+        "description" : "Gets process info on this workspace. To find all child processes, set id to '*'. This op does not returns error when no procs found but empty result array. Child process can be created by exec operation and by some other means.\n",
         "operationId" : "findProcs",
         "parameters" : [ {
           "name" : "workspaceId",
@@ -1085,6 +1119,12 @@
           "description" : "the id from execution request (different from pid!)",
           "required" : true,
           "type" : "string"
+        }, {
+          "name" : "includeForeground",
+          "in" : "query",
+          "description" : "flag to include 'foreground processes' in result. foreground processes can be created by and only by exec operation without async opetion. normally, this flag will not be used except debugging or diagnostics. foreground processes has 'foreground' property, set to true, always.",
+          "required" : false,
+          "type" : "boolean"
         } ],
         "responses" : {
           "200" : {
@@ -1107,8 +1147,8 @@
       },
       "post" : {
         "tags" : [ "workspace" ],
-        "description" : "Executes a shell command or spawns a background process on this workspace. Requires proper access rights.",
-        "operationId" : "exec",
+        "description" : "Executes a shell command (foreground process) or spawns a background process on this workspace. Requires proper access rights.",
+        "operationId" : "execute",
         "parameters" : [ {
           "name" : "workspaceId",
           "in" : "path",
@@ -1118,7 +1158,7 @@
         }, {
           "name" : "async",
           "in" : "query",
-          "description" : "Spawns a child process for given command and returns the created child proc info. Actual output (stream of message) will be delivered to web socket channel, using execution id.",
+          "description" : "Spawns a background process for given command and returns the created child proc info. Actual output (stream of message) will be delivered to web socket channel, using execution id.",
           "required" : false,
           "type" : "boolean",
           "default" : false
@@ -1133,7 +1173,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Execution result with all captured standard ouput and error. If execution is completed without error, the error property in result object should be a falsy value. If some error has happened, then it will be an error message, without stack. A plain RestError will be returned with 4xx or 5xx error code (e.g. insufficient/invalid arguments) when it's found before creating process. So, clients may handle the 'invocation error' and 'errors from the command' differently.",
+            "description" : "Execution result with all captured standard ouput and error. If execution is completed without error, the error property in result object should be a falsy value. If some error has happened, then it will be an error message, without stack. A plain RestError will be returned with 4xx or 5xx error code (e.g. insufficient/invalid arguments) when it's found before creating process. So, clients should handle the 'invocation error' and 'errors from the command' differently.",
             "schema" : {
               "$ref" : "#/definitions/ExecutionResult"
             }
@@ -1154,11 +1194,11 @@
         "security" : [ {
           "webida-simple-auth" : [ ]
         } ],
-        "x-handler" : "handlers/workspace/exec.js"
+        "x-handler" : "handlers/workspace/execute.js"
       },
       "delete" : {
         "tags" : [ "workspace" ],
-        "description" : "Cancels executions, killing the spawned processes. To terminate all spawned processes, set execId to '*'. Requires proper access rights. Since killing a process usually takes a little bit long time, this api does not returns actual result but works in async manner. (So, client should listen to web socket channels for the processes). This operation Requires same access rights to exec().",
+        "description" : "Cancels executions, killing the spawned processes. To terminate all spawned processes, set execId to '*'. Requires proper access rights. Since killing a process usually takes a little bit long time, this api does not returns actual result but works in async manner. (So, client should listen to web socket channels for the processes). This operation Requires same access rights to execute operation. Server should reject to cancel any forground processes and processes is being killed or has exited already.",
         "operationId" : "cancel",
         "parameters" : [ {
           "name" : "workspaceId",
@@ -1206,7 +1246,8 @@
       "type" : "object",
       "properties" : {
         "message" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "additional text from server. Clients may use this value to debugging or logging, but should not rely on the value of this property, for server can omit to set message for performance."
         }
       }
     },
@@ -1222,7 +1263,11 @@
         },
         "errno" : {
           "type" : "string",
-          "description" : "errno code for some internal errors in server. Since service implementation can use many different platform api & runtime, client should avoid relying on errno code."
+          "description" : "errno code for some internal errors in server. Since service implementation can use many different platform api & runtime, client should avoid relying on errno code. If server provides errno code, it should be translated into human readable string like ENOENT or ENOMEM, not pure integer value."
+        },
+        "stack" : {
+          "type" : "string",
+          "description" : "stack trace for this error. Server should not include stack trace in production and client should not print or show this stack to user. This property should be used in 'developer mode' only, for debugging."
         }
       },
       "description" : "Error object with code and message. code is bound to status code, but not always same to standard HTTP status text. For example, some 409 error may have code \"Invalid Argument\" instead of \"Conflic\". So, Client should read message property to know what happend exactly, when an error is returned from server. And, some 500 errors can have system errno instead of useless \"internal\". Like other errors, details are hidden in message."
@@ -1310,7 +1355,7 @@
           "format" : "date-time"
         },
         "mode" : {
-          "type" : "string"
+          "type" : "integer"
         },
         "size" : {
           "type" : "integer"
@@ -1381,15 +1426,15 @@
         },
         "workspacePath" : {
           "type" : "string",
-          "description" : "absolute path of this workspace in server. server may not expose this property to some untrusted clients."
+          "description" : "absolute path of this workspace in server. Server may not expose this property to some untrusted clients."
         },
-        "disposable" : {
+        "ephemeral" : {
           "type" : "boolean",
-          "description" : "If set, workspace is ephemeral - server will not keep persistence when it stops working. Ususally, side-loaded workspace via desktop app is disposable. Client with proper access right can flip this flag to declare the workspace should be persist.\n"
+          "description" : "If set, workspace is ephemeral - Server will drop registration when it stops working. Ususally, side-loaded workspace via desktop app is ephemeral. Client with proper access right can flip this flag to declare the workspace should be persist, after rebooting.\n"
         },
         "excludedPaths" : {
           "type" : "array",
-          "description" : "Ignore patterns to exclude from watch service and search-and-replace operations.\n\nPattern follows '.gitignore' syntax, 1 item per line. It should work as a .gitignore file in the workspace directory. Server should remove all comment items (any item that begins with '#') and blank items. Escaping with '\\' char for the beginning '!' and          ending white-spaces shoule be supported, too.\n\nTo exclude a directory, client may have to put '/' at the end of the item to exclude everything underneath it. When a dir path is excluded with 'ending /', watch service  may not deliver unlinkDir/addDir events for the path and client should manually check the existence or stats.\n",
+          "description" : "Ignore patterns to exclude from watch service and search-and-replace operations.\n\nPattern follows '.gitignore' syntax, 1 item per line. It should work as a .gitignore file in the workspace directory. Server should remove all comment items (any item that begins with '#') and blank items. Escaping with '\\' char for the beginning '!' and ending white-spaces shoule be supported, too.\n\nTo exclude a directory, client may have to put '/' at the end of the item to exclude everything underneath it. When a dir path is excluded with 'ending /', watch service  may not deliver unlinkDir/addDir events for the path and client should manually check the existence or stats.\n",
           "items" : {
             "type" : "string"
           }
@@ -1534,7 +1579,7 @@
     },
     "ChildProcess" : {
       "type" : "object",
-      "required" : [ "args", "command", "execId", "pid", "startedAt", "state" ],
+      "required" : [ "args", "command", "execId", "foreground", "pid", "startedAt", "state" ],
       "properties" : {
         "pid" : {
           "type" : "integer",
@@ -1557,8 +1602,12 @@
         },
         "state" : {
           "type" : "string",
-          "description" : "State of process. Where\n  CREATED - process is just created. no event has arrived yet\n  WORKING - some output on stdout/stderr is arrived\n  KILLING - sent kill signal, by cancel operation or error event from the process\n  EXITED  - process has exited.\n",
+          "description" : "State of process. Where\n  CREATED - process is just created. no event has arrived yet.\n  WORKING - some output on stdout/stderr is arrived.\n  KILLING - sent kill signal, by cancel operation or some critical error event from the process. Invoking cancel operation to a process being killed should return error.\n  EXITED  - This process has exited already. Server is cleaning up the resources and not complete yet. Client should not expect that every exited process can be found with findProcs(). As KILLING state, cancellation will be rejected.\n",
           "enum" : [ "CREATED", "WORKING", "KILLING", "EXITED" ]
+        },
+        "foreground" : {
+          "type" : "boolean",
+          "description" : "if is true, this process is created from synchronous exec request. Som"
         },
         "startedAt" : {
           "type" : "string",
@@ -1571,17 +1620,18 @@
         },
         "exitSignal" : {
           "type" : "string",
-          "description" : "the signal that killed this child process.(not always available)"
+          "description" : "the signal named that killed this child process.(not always available)"
         }
       },
-      "description" : "a process in execution, spawned by async exec or other mean"
+      "description" : "a process in execution, spawned by exec or other means."
     },
     "Alias" : {
       "type" : "object",
+      "required" : [ "id", "sourcePath", "workspaceId" ],
       "properties" : {
         "id" : {
           "type" : "string",
-          "description" : "id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for path should not be included, especially / char. ?, *, and other special characters for shell are not also allowed."
+          "description" : "id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for file system path should not be included. Windows OS prohibits following characters to be used in a file name.\n < (less than)\n > (greater than)\n : (colon)\n \" (double quote)\n / (forward slash)\n \\ (backslash)\n | (vertical bar or pipe)\n ? (question mark)\n * (asterisk)\n"
         },
         "workspaceId" : {
           "type" : "string",
@@ -1592,7 +1642,7 @@
           "description" : "the source of alias, relative path to workspace root directory."
         }
       },
-      "description" : "alias to access file system using git or direct http requests who can't call swagger api with proper tokens"
+      "description" : "alias to access file system using git or direct http(s) requests who can't call swagger api with proper tokens. Implemenations may provide some concrent url formats. Alias may be invalidated when the workspace it belongs is removed. Any removed alias will result 404 error or equivalent."
     }
   },
   "parameters" : {
@@ -1614,14 +1664,14 @@
     "srcPath" : {
       "name" : "srcPath",
       "in" : "query",
-      "description" : "source data path of some operations, with have heading /",
+      "description" : "source data path of some operations, without have heading /",
       "required" : true,
       "type" : "string"
     },
     "wfsPathList" : {
       "name" : "wfsPathList",
       "in" : "query",
-      "description" : "array of wfsPath, with heading /. (collectionFormat may be changed by implementation)",
+      "description" : "array of wfsPath, without heading /.",
       "required" : true,
       "type" : "array",
       "items" : {

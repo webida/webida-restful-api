@@ -39,7 +39,7 @@ var wfsId = "wfsId_example"; // String | webida file system id (same to workspac
 
 var wfsPath = "wfsPath_example"; // String | webida file system path to access. without heading /. should be placed at the end of path arguments
 
-var srcPath = "srcPath_example"; // String | source data path of some operations, with have heading /
+var srcPath = "srcPath_example"; // String | source data path of some operations, without have heading /
 
 var opts = { 
   'noOverwrite': false // Boolean | does not overwrites any existing file while copying or moving
@@ -63,7 +63,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
  **wfsPath** | **String**| webida file system path to access. without heading /. should be placed at the end of path arguments | 
- **srcPath** | **String**| source data path of some operations, with have heading / | 
+ **srcPath** | **String**| source data path of some operations, without have heading / | 
  **noOverwrite** | **Boolean**| does not overwrites any existing file while copying or moving | [optional] [default to false]
  **followSymbolicLinks** | **Boolean**| dereference symlinks in source. | [optional] [default to false]
  **preserveTimestamps** | **Boolean**| keep mtime/atime of source file(s) in destination. | [optional] [default to false]
@@ -221,7 +221,7 @@ var wfsId = "wfsId_example"; // String | webida file system id (same to workspac
 
 var wfsPath = "wfsPath_example"; // String | webida file system path to access. without heading /. should be placed at the end of path arguments
 
-var srcPath = "srcPath_example"; // String | source data path of some operations, with have heading /
+var srcPath = "srcPath_example"; // String | source data path of some operations, without have heading /
 
 var opts = { 
   'noOverwrite': false // Boolean | does not overwrites any existing file while copying or moving
@@ -243,7 +243,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
  **wfsPath** | **String**| webida file system path to access. without heading /. should be placed at the end of path arguments | 
- **srcPath** | **String**| source data path of some operations, with have heading / | 
+ **srcPath** | **String**| source data path of some operations, without have heading / | 
  **noOverwrite** | **Boolean**| does not overwrites any existing file while copying or moving | [optional] [default to false]
 
 ### Return type
@@ -261,7 +261,7 @@ Name | Type | Description  | Notes
 
 <a name="readFile"></a>
 # **readFile**
-> File readFile(wfsId, wfsPath, )
+> File readFile(wfsId, wfsPath, , opts)
 
 
 
@@ -284,6 +284,10 @@ var wfsId = "wfsId_example"; // String | webida file system id (same to workspac
 
 var wfsPath = "wfsPath_example"; // String | webida file system path to access. without heading /. should be placed at the end of path arguments
 
+var opts = { 
+  'ifModifiedSince': "ifModifiedSince_example", // String | Usual if-modified-since header. So, should be RFC-1123(same to RFC-822) format, not RFC-3339 (same to ISO-8601).
+  'ifNoneMatch': "ifNoneMatch_example" // String | Usual if-non-match header, allowing only 1 e-tag value from previous readFile response, including weak prefix and quotation chars. This header value precedes if-modified-since, and server should ignore if-modified-since header when if-none-match header exists, as RFC-2616 declines.
+};
 
 var callback = function(error, data, response) {
   if (error) {
@@ -292,7 +296,7 @@ var callback = function(error, data, response) {
     console.log('API called successfully. Returned data: ' + data);
   }
 };
-apiInstance.readFile(wfsId, wfsPath, , callback);
+apiInstance.readFile(wfsId, wfsPath, , opts, callback);
 ```
 
 ### Parameters
@@ -301,6 +305,8 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
  **wfsPath** | **String**| webida file system path to access. without heading /. should be placed at the end of path arguments | 
+ **ifModifiedSince** | **String**| Usual if-modified-since header. So, should be RFC-1123(same to RFC-822) format, not RFC-3339 (same to ISO-8601). | [optional] 
+ **ifNoneMatch** | **String**| Usual if-non-match header, allowing only 1 e-tag value from previous readFile response, including weak prefix and quotation chars. This header value precedes if-modified-since, and server should ignore if-modified-since header when if-none-match header exists, as RFC-2616 declines. | [optional] 
 
 ### Return type
 
@@ -401,7 +407,7 @@ var wfsId = "wfsId_example"; // String | webida file system id (same to workspac
 var wfsPath = "wfsPath_example"; // String | webida file system path to access. without heading /. should be placed at the end of path arguments
 
 var opts = { 
-  'ignoreError': false // Boolean | When true, operation ignore ENOENT error and returns DUMMY stats object instead of 404 error.
+  'dummyFor404': false // Boolean | When true, operation ignore ENOENT error and returns DUMMY stats object instead of 404 error.
 };
 
 var callback = function(error, data, response) {
@@ -420,7 +426,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
  **wfsPath** | **String**| webida file system path to access. without heading /. should be placed at the end of path arguments | 
- **ignoreError** | **Boolean**| When true, operation ignore ENOENT error and returns DUMMY stats object instead of 404 error. | [optional] [default to false]
+ **dummyFor404** | **Boolean**| When true, operation ignore ENOENT error and returns DUMMY stats object instead of 404 error. | [optional] [default to false]
 
 ### Return type
 
