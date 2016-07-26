@@ -385,9 +385,13 @@
       request.accept(accept);
     }
 
-    // if api returns file, then it should be handled as blob
+    // if api returns file, caller should be able to set
+    // response type (blob, arraybuffer..) of XHR request
+    // client should not set blob/arraybuffer type if return file is json, due to superagent bugs.
     if (returnType === File) {
-        request.responseType('blob');
+        if (callback.responseType) {
+            request.responseType(callback.responseType);
+        }
     }
 
 {{#usePromises}}    return new Promise(function(resolve, reject) {
