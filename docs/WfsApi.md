@@ -286,7 +286,7 @@ var wfsPath = "wfsPath_example"; // String | webida file system path to access. 
 
 var opts = { 
   'ifModifiedSince': "ifModifiedSince_example", // String | Usual if-modified-since header. So, should be RFC-1123(same to RFC-822) format, not RFC-3339 (same to ISO-8601).
-  'ifNoneMatch': "ifNoneMatch_example" // String | Usual if-non-match header, allowing only 1 e-tag value from previous readFile response, including weak prefix and quotation chars. This header value precedes if-modified-since, and server should ignore if-modified-since header when if-none-match header exists, as RFC-2616 declines.
+  'ifNoneMatch': "ifNoneMatch_example" // String | Usual if-non-match header, allowing only 1 e-tag value from previous readFile response. The value of this header can have weak prefix and quotation chars. This header value precedes the value of if-modified-since header. Server should ignore if-modified-since header when if-none-match header exists, as RFC-2616.
 };
 
 var callback = function(error, data, response) {
@@ -306,7 +306,7 @@ Name | Type | Description  | Notes
  **wfsId** | **String**| webida file system id (same to workspace id) to access. | 
  **wfsPath** | **String**| webida file system path to access. without heading /. should be placed at the end of path arguments | 
  **ifModifiedSince** | **String**| Usual if-modified-since header. So, should be RFC-1123(same to RFC-822) format, not RFC-3339 (same to ISO-8601). | [optional] 
- **ifNoneMatch** | **String**| Usual if-non-match header, allowing only 1 e-tag value from previous readFile response, including weak prefix and quotation chars. This header value precedes if-modified-since, and server should ignore if-modified-since header when if-none-match header exists, as RFC-2616 declines. | [optional] 
+ **ifNoneMatch** | **String**| Usual if-non-match header, allowing only 1 e-tag value from previous readFile response. The value of this header can have weak prefix and quotation chars. This header value precedes the value of if-modified-since header. Server should ignore if-modified-since header when if-none-match header exists, as RFC-2616. | [optional] 
 
 ### Return type
 

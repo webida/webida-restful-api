@@ -205,7 +205,7 @@
     "/auth/token" : {
       "post" : {
         "tags" : [ "auth" ],
-        "description" : "Creates new token from current access token, inheriting workspace id & session id. The duration of generated token is (and should not be) parameterizable. Server should set proper duration, respecting \"reconnect\" period of socket.io clients. Remember that most of socket.io client implementations (including official js client) do not provide any ways to change connection parameters (header or query) while reconnecting to server.\n\nLike login API, this endpoint does not provide any encryption. Server should not set any data to harm security in the token & should provide some signinig/encryption mechanism to protect token. Simple JSON Web Token with HMAC-SHA will do.\n",
+        "description" : "Creates new token from current access token, inheriting workspace id & session id. The duration of generated token is not (and should not be) parameterizable. Server should set proper duration, respecting \"reconnect\" period of socket.io clients. Remember that most of socket.io client implementations (including official js client) do not provide any ways to change connection parameters (header or query) while reconnecting to server.\n\nLike login API, this endpoint does not provide any encryption. Server should not set any data to harm security in the token & should provide some signinig/encryption mechanism to protect token. Simple JSON Web Token with HMAC-SHA will do.\n",
         "operationId" : "issueToken",
         "parameters" : [ {
           "name" : "type",
@@ -724,7 +724,7 @@
         }, {
           "name" : "If-None-Match",
           "in" : "header",
-          "description" : "Usual if-non-match header, allowing only 1 e-tag value from previous readFile response, including weak prefix and quotation chars. This header value precedes if-modified-since, and server should ignore if-modified-since header when if-none-match header exists, as RFC-2616 declines.",
+          "description" : "Usual if-non-match header, allowing only 1 e-tag value from previous readFile response. The value of this header can have weak prefix and quotation chars. This header value precedes the value of if-modified-since header. Server should ignore if-modified-since header when if-none-match header exists, as RFC-2616.",
           "required" : false,
           "type" : "string"
         } ],
@@ -1478,7 +1478,7 @@
     },
     "Session" : {
       "type" : "object",
-      "required" : [ "clientAddress", "connectedAt", "disconnectedAt", "id", "name", "state" ],
+      "required" : [ "clientAddress", "connectedAt", "id", "name", "state" ],
       "properties" : {
         "id" : {
           "type" : "string",
@@ -1490,8 +1490,8 @@
         },
         "state" : {
           "type" : "string",
-          "description" : "NORMAL = connected, normally working\nLOSING = disconnected, waiting reconnection. still accessible with api\nCLOSING = socket connection will close connection by server (clinet will be notified)\n\nThere\"s no \"CLOSED\" / \"LOST\" state, for server will remove session object in registry  when the server closes connection or stops waiting for reconnection for timeout.\n",
-          "enum" : [ "NORMAL", "LOSING", "CLOSING" ]
+          "description" : "NORMAL = connected, normally working.\nCLOSING = server requested client to disconnect. Connection will be closed soon.\nTERMINATED = disconnected. server will remove this session from registry ASAP.\n",
+          "enum" : [ "NORMAL", "CLOSING", "TERMINATED" ]
         },
         "workspaceId" : {
           "type" : "string",
@@ -1506,20 +1506,10 @@
           "format" : "date-time",
           "description" : "the time when socket connection is established"
         },
-        "disconnectedAt" : {
-          "type" : "string",
-          "format" : "date-time",
-          "description" : "the time when socket is closed."
-        },
         "willCloseAt" : {
           "type" : "string",
           "format" : "date-time",
-          "description" : "when state becomes CLOSING, actual closing time will be updated by server."
-        },
-        "willLoseAt" : {
-          "type" : "string",
-          "format" : "date-time",
-          "description" : "when state becomes LOSING, server will not wait for reconnection after this time."
+          "description" : "when state becomes CLOSING, server sets this time as deadline."
         }
       },
       "description" : "an application session per ide instance. bound to access token"
@@ -1631,7 +1621,7 @@
       "properties" : {
         "id" : {
           "type" : "string",
-          "description" : "id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for file system path should not be included. Windows OS prohibits following characters to be used in a file name.\n < (less than)\n > (greater than)\n : (colon)\n \" (double quote)\n / (forward slash)\n \\ (backslash)\n | (vertical bar or pipe)\n ? (question mark)\n * (asterisk)\n"
+          "description" : "id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for file system path should not be included. Windows OS prohibits following characters.\n < (less than)\n > (greater than)\n : (colon)\n \" (double quote)\n / (forward slash)\n \\ (backslash)\n | (vertical bar or pipe)\n ? (question mark)\n * (asterisk)\n"
         },
         "workspaceId" : {
           "type" : "string",

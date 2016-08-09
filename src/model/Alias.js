@@ -53,7 +53,7 @@
    * alias to access file system using git or direct http(s) requests who can&#39;t call swagger api with proper tokens. Implemenations may provide some concrent url formats. Alias may be invalidated when the workspace it belongs is removed. Any removed alias will result 404 error or equivalent.
    * @alias module:model/Alias
    * @class
-   * @param id {String} id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for file system path should not be included. Windows OS prohibits following characters to be used in a file name.  < (less than)  > (greater than)  : (colon)  \" (double quote)  / (forward slash)  \\ (backslash)  | (vertical bar or pipe)  ? (question mark)  * (asterisk) 
+   * @param id {String} id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for file system path should not be included. Windows OS prohibits following characters.  < (less than)  > (greater than)  : (colon)  \" (double quote)  / (forward slash)  \\ (backslash)  | (vertical bar or pipe)  ? (question mark)  * (asterisk) 
    * @param workspaceId {String} id of the workspace that contains source of alias
    * @param sourcePath {String} the source of alias, relative path to workspace root directory.
    */
@@ -90,7 +90,7 @@
   }
 
   /**
-   * id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for file system path should not be included. Windows OS prohibits following characters to be used in a file name.  < (less than)  > (greater than)  : (colon)  \" (double quote)  / (forward slash)  \\ (backslash)  | (vertical bar or pipe)  ? (question mark)  * (asterisk) 
+   * id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for file system path should not be included. Windows OS prohibits following characters.  < (less than)  > (greater than)  : (colon)  \" (double quote)  / (forward slash)  \\ (backslash)  | (vertical bar or pipe)  ? (question mark)  * (asterisk) 
    * @member {String} id
    */
   exports.prototype['id'] = undefined;

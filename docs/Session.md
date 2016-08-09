@@ -5,13 +5,11 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **String** | the id of a session. usually same to socket id. | 
 **name** | **String** | human readable name, usually derived from workspace name. | 
-**state** | **String** | NORMAL &#x3D; connected, normally working LOSING &#x3D; disconnected, waiting reconnection. still accessible with api CLOSING &#x3D; socket connection will close connection by server (clinet will be notified)  There\&quot;s no \&quot;CLOSED\&quot; / \&quot;LOST\&quot; state, for server will remove session object in registry  when the server closes connection or stops waiting for reconnection for timeout.  | 
+**state** | **String** | NORMAL &#x3D; connected, normally working. CLOSING &#x3D; server requested client to disconnect. Connection will be closed soon. TERMINATED &#x3D; disconnected. server will remove this session from registry ASAP.  | 
 **workspaceId** | **String** | the id of workspace that this sessions is working on. If falsy, then this session is not belonged to any workpsace. Usually, dashboard / monitoring app will create a session without workspace id. | [optional] 
 **clientAddress** | **String** | the peer address of session connection. not always | 
 **connectedAt** | **Date** | the time when socket connection is established | 
-**disconnectedAt** | **Date** | the time when socket is closed. | 
-**willCloseAt** | **Date** | when state becomes CLOSING, actual closing time will be updated by server. | [optional] 
-**willLoseAt** | **Date** | when state becomes LOSING, server will not wait for reconnection after this time. | [optional] 
+**willCloseAt** | **Date** | when state becomes CLOSING, server sets this time as deadline. | [optional] 
 
 
 <a name="StateEnum"></a>
@@ -20,9 +18,9 @@ Name | Type | Description | Notes
 
 * `NORMAL` (value: `"NORMAL"`)
 
-* `LOSING` (value: `"LOSING"`)
-
 * `CLOSING` (value: `"CLOSING"`)
+
+* `TERMINATED` (value: `"TERMINATED"`)
 
 
 

@@ -62,7 +62,7 @@ This endpoint does not need any parameter.
 
 
 
-Creates new token from current access token, inheriting workspace id &amp; session id. The duration of generated token is (and should not be) parameterizable. Server should set proper duration, respecting \&quot;reconnect\&quot; period of socket.io clients. Remember that most of socket.io client implementations (including official js client) do not provide any ways to change connection parameters (header or query) while reconnecting to server.  Like login API, this endpoint does not provide any encryption. Server should not set any data to harm security in the token &amp; should provide some signinig/encryption mechanism to protect token. Simple JSON Web Token with HMAC-SHA will do. 
+Creates new token from current access token, inheriting workspace id &amp; session id. The duration of generated token is not (and should not be) parameterizable. Server should set proper duration, respecting \&quot;reconnect\&quot; period of socket.io clients. Remember that most of socket.io client implementations (including official js client) do not provide any ways to change connection parameters (header or query) while reconnecting to server.  Like login API, this endpoint does not provide any encryption. Server should not set any data to harm security in the token &amp; should provide some signinig/encryption mechanism to protect token. Simple JSON Web Token with HMAC-SHA will do. 
 
 ### Example
 ```javascript

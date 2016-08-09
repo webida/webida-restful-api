@@ -55,12 +55,11 @@
    * @class
    * @param id {String} the id of a session. usually same to socket id.
    * @param name {String} human readable name, usually derived from workspace name.
-   * @param state {module:model/Session.StateEnum} NORMAL = connected, normally working LOSING = disconnected, waiting reconnection. still accessible with api CLOSING = socket connection will close connection by server (clinet will be notified)  There\"s no \"CLOSED\" / \"LOST\" state, for server will remove session object in registry  when the server closes connection or stops waiting for reconnection for timeout. 
+   * @param state {module:model/Session.StateEnum} NORMAL = connected, normally working. CLOSING = server requested client to disconnect. Connection will be closed soon. TERMINATED = disconnected. server will remove this session from registry ASAP. 
    * @param clientAddress {String} the peer address of session connection. not always
    * @param connectedAt {Date} the time when socket connection is established
-   * @param disconnectedAt {Date} the time when socket is closed.
    */
-  var exports = function(id, name, state, clientAddress, connectedAt, disconnectedAt) {
+  var exports = function(id, name, state, clientAddress, connectedAt) {
     var _this = this;
 
     _this['id'] = id;
@@ -69,8 +68,6 @@
 
     _this['clientAddress'] = clientAddress;
     _this['connectedAt'] = connectedAt;
-    _this['disconnectedAt'] = disconnectedAt;
-
 
   };
 
@@ -103,14 +100,8 @@
       if (data.hasOwnProperty('connectedAt')) {
         obj['connectedAt'] = ApiClient.convertToType(data['connectedAt'], 'Date');
       }
-      if (data.hasOwnProperty('disconnectedAt')) {
-        obj['disconnectedAt'] = ApiClient.convertToType(data['disconnectedAt'], 'Date');
-      }
       if (data.hasOwnProperty('willCloseAt')) {
         obj['willCloseAt'] = ApiClient.convertToType(data['willCloseAt'], 'Date');
-      }
-      if (data.hasOwnProperty('willLoseAt')) {
-        obj['willLoseAt'] = ApiClient.convertToType(data['willLoseAt'], 'Date');
       }
     }
     return obj;
@@ -127,7 +118,7 @@
    */
   exports.prototype['name'] = undefined;
   /**
-   * NORMAL = connected, normally working LOSING = disconnected, waiting reconnection. still accessible with api CLOSING = socket connection will close connection by server (clinet will be notified)  There\"s no \"CLOSED\" / \"LOST\" state, for server will remove session object in registry  when the server closes connection or stops waiting for reconnection for timeout. 
+   * NORMAL = connected, normally working. CLOSING = server requested client to disconnect. Connection will be closed soon. TERMINATED = disconnected. server will remove this session from registry ASAP. 
    * @member {module:model/Session.StateEnum} state
    */
   exports.prototype['state'] = undefined;
@@ -147,20 +138,10 @@
    */
   exports.prototype['connectedAt'] = undefined;
   /**
-   * the time when socket is closed.
-   * @member {Date} disconnectedAt
-   */
-  exports.prototype['disconnectedAt'] = undefined;
-  /**
-   * when state becomes CLOSING, actual closing time will be updated by server.
+   * when state becomes CLOSING, server sets this time as deadline.
    * @member {Date} willCloseAt
    */
   exports.prototype['willCloseAt'] = undefined;
-  /**
-   * when state becomes LOSING, server will not wait for reconnection after this time.
-   * @member {Date} willLoseAt
-   */
-  exports.prototype['willLoseAt'] = undefined;
 
 
   /**
@@ -175,15 +156,15 @@
      */
     "NORMAL": "NORMAL",
     /**
-     * value: "LOSING"
-     * @const
-     */
-    "LOSING": "LOSING",
-    /**
      * value: "CLOSING"
      * @const
      */
-    "CLOSING": "CLOSING"  };
+    "CLOSING": "CLOSING",
+    /**
+     * value: "TERMINATED"
+     * @const
+     */
+    "TERMINATED": "TERMINATED"  };
 
 
   return exports;
