@@ -1,6 +1,6 @@
 {
   "name": "webida-restful-api",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Webida Restful API Spec & generated clients",
   "license": "Apache-2.0",
   "main": "src/index.js",

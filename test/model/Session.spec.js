@@ -101,20 +101,8 @@
       //expect(instance).to.be();
     });
 
-    it('should have the property disconnectedAt (base name: "disconnectedAt")', function() {
-      // uncomment below and update the code to test the property disconnectedAt
-      //var instane = new WebidaRestfulApi.Session();
-      //expect(instance).to.be();
-    });
-
     it('should have the property willCloseAt (base name: "willCloseAt")', function() {
       // uncomment below and update the code to test the property willCloseAt
-      //var instane = new WebidaRestfulApi.Session();
-      //expect(instance).to.be();
-    });
-
-    it('should have the property willLoseAt (base name: "willLoseAt")', function() {
-      // uncomment below and update the code to test the property willLoseAt
       //var instane = new WebidaRestfulApi.Session();
       //expect(instance).to.be();
     });

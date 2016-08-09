@@ -311,7 +311,7 @@
      * @param {String} wfsPath webida file system path to access. without heading /. should be placed at the end of path arguments
      * @param {Object} opts Optional parameters
      * @param {String} opts.ifModifiedSince Usual if-modified-since header. So, should be RFC-1123(same to RFC-822) format, not RFC-3339 (same to ISO-8601).
-     * @param {String} opts.ifNoneMatch Usual if-non-match header, allowing only 1 e-tag value from previous readFile response, including weak prefix and quotation chars. This header value precedes if-modified-since, and server should ignore if-modified-since header when if-none-match header exists, as RFC-2616 declines.
+     * @param {String} opts.ifNoneMatch Usual if-non-match header, allowing only 1 e-tag value from previous readFile response. The value of this header can have weak prefix and quotation chars. This header value precedes the value of if-modified-since header. Server should ignore if-modified-since header when if-none-match header exists, as RFC-2616.
      * @param {module:api/WfsApi~readFileCallback} callback The callback function, accepting three arguments: error, data, response
      * data is of type: {File}
      */

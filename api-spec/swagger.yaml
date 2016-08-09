@@ -102,7 +102,7 @@ paths:
       x-handler: handlers/auth/issueToken.js
       tags: ["auth"]
       description: |
-        Creates new token from current access token, inheriting workspace id & session id. The duration of generated token is (and should not be) parameterizable. Server should set proper duration, respecting "reconnect" period of socket.io clients. Remember that most of socket.io client implementations (including official js client) do not provide any ways to change connection parameters (header or query) while reconnecting to server.
+        Creates new token from current access token, inheriting workspace id & session id. The duration of generated token is not (and should not be) parameterizable. Server should set proper duration, respecting "reconnect" period of socket.io clients. Remember that most of socket.io client implementations (including official js client) do not provide any ways to change connection parameters (header or query) while reconnecting to server.
 
         Like login API, this endpoint does not provide any encryption. Server should not set any data to harm security in the token & should provide some signinig/encryption mechanism to protect token. Simple JSON Web Token with HMAC-SHA will do.
 
@@ -168,7 +168,7 @@ paths:
         - name: If-None-Match
           in: header
           required: false
-          description: Usual if-non-match header, allowing only 1 e-tag value from previous readFile response, including weak prefix and quotation chars. This header value precedes if-modified-since, and server should ignore if-modified-since header when if-none-match header exists, as RFC-2616 declines.
+          description: Usual if-non-match header, allowing only 1 e-tag value from previous readFile response. The value of this header can have weak prefix and quotation chars. This header value precedes the value of if-modified-since header. Server should ignore if-modified-since header when if-none-match header exists, as RFC-2616.
           type: string
       responses:
         "200":
@@ -1237,16 +1237,14 @@ definitions:
         type: string
       state:
         description: |
-          NORMAL = connected, normally working
-          LOSING = disconnected, waiting reconnection. still accessible with api
-          CLOSING = socket connection will close connection by server (clinet will be notified)
-
-          There"s no "CLOSED" / "LOST" state, for server will remove session object in registry  when the server closes connection or stops waiting for reconnection for timeout.
+          NORMAL = connected, normally working.
+          CLOSING = server requested client to disconnect. Connection will be closed soon.
+          TERMINATED = disconnected. server will remove this session from registry ASAP.
         type: string
         enum:
           - NORMAL
-          - LOSING
           - CLOSING
+          - TERMINATED
       workspaceId:
         description: the id of workspace that this sessions is working on. If falsy, then this session is not belonged to any workpsace. Usually, dashboard / monitoring app will create a session without workspace id.
         type: string
@@ -1257,16 +1255,8 @@ definitions:
         description: the time when socket connection is established
         type: string
         format: date-time
-      disconnectedAt:
-        description: the time when socket is closed.
-        type: string
-        format: date-time
       willCloseAt:
-        description: when state becomes CLOSING, actual closing time will be updated by server.
-        type: string
-        format: date-time
-      willLoseAt:
-        description: when state becomes LOSING, server will not wait for reconnection after this time.
+        description: when state becomes CLOSING, server sets this time as deadline.
         type: string
         format: date-time
     required:
@@ -1275,7 +1265,6 @@ definitions:
       - state
       - clientAddress
       - connectedAt
-      - disconnectedAt
 
   Execution:
     type: object
@@ -1398,7 +1387,7 @@ definitions:
     properties:
       id:
         description: |
-          id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for file system path should not be included. Windows OS prohibits following characters to be used in a file name.
+          id, and the path-fragment to access. Since this id is a path-fragment, any unsafe chars for file system path should not be included. Windows OS prohibits following characters.
            < (less than)
            > (greater than)
            : (colon)
