@@ -4,7 +4,7 @@ This SDK Contains automatically generated sources & documents with the [Swagger 
 
 - API version: 0.7.1
 - Package version: 0.7.1
-- Build date: 2016-08-09T17:23:32.460+09:00
+- Build date: 2016-08-18T15:47:36.665+09:00
 - Build package: class io.swagger.codegen.languages.JavascriptClientCodegen
 
 ## Getting Started
@@ -54,8 +54,6 @@ Class | Method | HTTP request | Description
 *WebidaRestfulApi.AuthApi* | [**getInfo**](docs/AuthApi.md#getInfo) | **GET** /auth/info | 
 *WebidaRestfulApi.AuthApi* | [**issueToken**](docs/AuthApi.md#issueToken) | **POST** /auth/token | 
 *WebidaRestfulApi.AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | 
-*WebidaRestfulApi.OpsApi* | [**replace**](docs/OpsApi.md#replace) | **POST** /wfs/{wfsId}/ops/replace | 
-*WebidaRestfulApi.OpsApi* | [**search**](docs/OpsApi.md#search) | **GET** /wfs/{wfsId}/ops/search | 
 *WebidaRestfulApi.RemotesApi* | [**findRemoteAccesses**](docs/RemotesApi.md#findRemoteAccesses) | **GET** /remotes | 
 *WebidaRestfulApi.RemotesApi* | [**putRemoteAccess**](docs/RemotesApi.md#putRemoteAccess) | **PUT** /remotes | 
 *WebidaRestfulApi.RemotesApi* | [**removeRemoteAccess**](docs/RemotesApi.md#removeRemoteAccess) | **DELETE** /remotes | 
@@ -67,6 +65,8 @@ Class | Method | HTTP request | Description
 *WebidaRestfulApi.WfsApi* | [**move**](docs/WfsApi.md#move) | **POST** /wfs/{wfsId}/any/{wfsPath} | 
 *WebidaRestfulApi.WfsApi* | [**readFile**](docs/WfsApi.md#readFile) | **GET** /wfs/{wfsId}/file/{wfsPath} | 
 *WebidaRestfulApi.WfsApi* | [**remove**](docs/WfsApi.md#remove) | **DELETE** /wfs/{wfsId}/any/{wfsPath} | 
+*WebidaRestfulApi.WfsApi* | [**replace**](docs/WfsApi.md#replace) | **POST** /wfs/{wfsId}/ops/replace | 
+*WebidaRestfulApi.WfsApi* | [**search**](docs/WfsApi.md#search) | **GET** /wfs/{wfsId}/ops/search | 
 *WebidaRestfulApi.WfsApi* | [**stat**](docs/WfsApi.md#stat) | **GET** /wfs/{wfsId}/any/{wfsPath} | 
 *WebidaRestfulApi.WfsApi* | [**writeFile**](docs/WfsApi.md#writeFile) | **PUT** /wfs/{wfsId}/file/{wfsPath} | 
 *WebidaRestfulApi.WorkspaceApi* | [**cancel**](docs/WorkspaceApi.md#cancel) | **DELETE** /workspaces/{workspaceId}/procs | 

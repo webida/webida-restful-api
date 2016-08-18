@@ -393,7 +393,7 @@ paths:
   /wfs/{wfsId}/ops/search:
     get:
       x-handler: handlers/wfs/search.js
-      tags: ["ops"]
+      tags: ["wfs"]
       description: search files in some path, with given pattern
       operationId: search
       security:
@@ -421,7 +421,7 @@ paths:
   /wfs/{wfsId}/ops/replace:
     post:
       x-handler: handlers/wfs/replace.js
-      tags: ["ops"]
+      tags: ["wfs"]
       description: replace file contents with regex matching
       operationId: replace
       security:

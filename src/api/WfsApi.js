@@ -412,6 +412,139 @@
     }
 
     /**
+     * Callback function to receive the result of the replace operation.
+     * @callback module:api/WfsApi~replaceCallback
+     * @param {String} error Error message, if any.
+     * @param {module:model/RestOK} data The data returned by the service call.
+     * @param {String} response The complete HTTP response.
+     */
+
+    /**
+     * replace file contents with regex matching
+     * @param {String} wfsId webida file system id (same to workspace id) to access.
+     * @param {Array.<String>} wfsPathList array of wfsPath, without heading /.
+     * @param {String} pattern regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation
+     * @param {String} replaceTo string to replace with
+     * @param {Object} opts Optional parameters
+     * @param {Boolean} opts.ignoreCase regex matching option to ignore case. In replace operation, this option should be same to one used in search operation (default to false)
+     * @param {module:api/WfsApi~replaceCallback} callback The callback function, accepting three arguments: error, data, response
+     * data is of type: {module:model/RestOK}
+     */
+    this.replace = function(wfsId, wfsPathList, pattern, replaceTo, opts, callback) {
+      opts = opts || {};
+      var postBody = null;
+
+      // verify the required parameter 'wfsId' is set
+      if (wfsId == undefined || wfsId == null) {
+        throw "Missing the required parameter 'wfsId' when calling replace";
+      }
+
+      // verify the required parameter 'wfsPathList' is set
+      if (wfsPathList == undefined || wfsPathList == null) {
+        throw "Missing the required parameter 'wfsPathList' when calling replace";
+      }
+
+      // verify the required parameter 'pattern' is set
+      if (pattern == undefined || pattern == null) {
+        throw "Missing the required parameter 'pattern' when calling replace";
+      }
+
+      // verify the required parameter 'replaceTo' is set
+      if (replaceTo == undefined || replaceTo == null) {
+        throw "Missing the required parameter 'replaceTo' when calling replace";
+      }
+
+
+      var pathParams = {
+        'wfsId': wfsId
+      };
+      var queryParams = {
+        'wfsPathList': this.apiClient.buildCollectionParam(wfsPathList, 'multi'),
+        'pattern': pattern,
+        'ignoreCase': opts['ignoreCase'],
+        'replaceTo': replaceTo
+      };
+      var headerParams = {
+      };
+      var formParams = {
+      };
+
+      var authNames = ['webida-simple-auth'];
+      var contentTypes = ['application/json'];
+      var accepts = ['application/json', 'application/octet-stream'];
+      var returnType = RestOK;
+
+      return this.apiClient.callApi(
+        '/wfs/{wfsId}/ops/replace', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, callback
+      );
+    }
+
+    /**
+     * Callback function to receive the result of the search operation.
+     * @callback module:api/WfsApi~searchCallback
+     * @param {String} error Error message, if any.
+     * @param {Object.<String, {'String': [Match]}>} data The data returned by the service call.
+     * @param {String} response The complete HTTP response.
+     */
+
+    /**
+     * search files in some path, with given pattern
+     * @param {String} wfsId webida file system id (same to workspace id) to access.
+     * @param {Array.<String>} wfsPathList array of wfsPath, without heading /.
+     * @param {String} pattern regex pattern to match in search or replace. In replace operation, pattern should be same to the parttern in search operation
+     * @param {Object} opts Optional parameters
+     * @param {Boolean} opts.ignoreCase regex matching option to ignore case. In replace operation, this option should be same to one used in search operation (default to false)
+     * @param {module:api/WfsApi~searchCallback} callback The callback function, accepting three arguments: error, data, response
+     * data is of type: {Object.<String, {'String': [Match]}>}
+     */
+    this.search = function(wfsId, wfsPathList, pattern, opts, callback) {
+      opts = opts || {};
+      var postBody = null;
+
+      // verify the required parameter 'wfsId' is set
+      if (wfsId == undefined || wfsId == null) {
+        throw "Missing the required parameter 'wfsId' when calling search";
+      }
+
+      // verify the required parameter 'wfsPathList' is set
+      if (wfsPathList == undefined || wfsPathList == null) {
+        throw "Missing the required parameter 'wfsPathList' when calling search";
+      }
+
+      // verify the required parameter 'pattern' is set
+      if (pattern == undefined || pattern == null) {
+        throw "Missing the required parameter 'pattern' when calling search";
+      }
+
+
+      var pathParams = {
+        'wfsId': wfsId
+      };
+      var queryParams = {
+        'wfsPathList': this.apiClient.buildCollectionParam(wfsPathList, 'multi'),
+        'pattern': pattern,
+        'ignoreCase': opts['ignoreCase']
+      };
+      var headerParams = {
+      };
+      var formParams = {
+      };
+
+      var authNames = ['webida-simple-auth'];
+      var contentTypes = ['application/json'];
+      var accepts = ['application/json', 'application/octet-stream'];
+      var returnType = {'String': [Match]};
+
+      return this.apiClient.callApi(
+        '/wfs/{wfsId}/ops/search', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, callback
+      );
+    }
+
+    /**
      * Callback function to receive the result of the stat operation.
      * @callback module:api/WfsApi~statCallback
      * @param {String} error Error message, if any.

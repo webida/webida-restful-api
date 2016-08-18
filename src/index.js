@@ -25,12 +25,12 @@
 (function(factory) {
   if (typeof define === 'function' && define.amd) {
     // AMD. Register as an anonymous module.
-    define(['ApiClient', 'model/Alias', 'model/ChildProcess', 'model/Credential', 'model/DirEntry', 'model/Execution', 'model/ExecutionResult', 'model/Match', 'model/RemoteAccess', 'model/RestError', 'model/RestOK', 'model/Session', 'model/Stats', 'model/Token', 'model/User', 'model/Workspace', 'api/AliasApi', 'api/AuthApi', 'api/OpsApi', 'api/RemotesApi', 'api/SessionApi', 'api/WfsApi', 'api/WorkspaceApi'], factory);
+    define(['ApiClient', 'model/Alias', 'model/ChildProcess', 'model/Credential', 'model/DirEntry', 'model/Execution', 'model/ExecutionResult', 'model/Match', 'model/RemoteAccess', 'model/RestError', 'model/RestOK', 'model/Session', 'model/Stats', 'model/Token', 'model/User', 'model/Workspace', 'api/AliasApi', 'api/AuthApi', 'api/RemotesApi', 'api/SessionApi', 'api/WfsApi', 'api/WorkspaceApi'], factory);
   } else if (typeof module === 'object' && module.exports) {
     // CommonJS-like environments that support module.exports, like Node.
-    module.exports = factory(require('./ApiClient'), require('./model/Alias'), require('./model/ChildProcess'), require('./model/Credential'), require('./model/DirEntry'), require('./model/Execution'), require('./model/ExecutionResult'), require('./model/Match'), require('./model/RemoteAccess'), require('./model/RestError'), require('./model/RestOK'), require('./model/Session'), require('./model/Stats'), require('./model/Token'), require('./model/User'), require('./model/Workspace'), require('./api/AliasApi'), require('./api/AuthApi'), require('./api/OpsApi'), require('./api/RemotesApi'), require('./api/SessionApi'), require('./api/WfsApi'), require('./api/WorkspaceApi'));
+    module.exports = factory(require('./ApiClient'), require('./model/Alias'), require('./model/ChildProcess'), require('./model/Credential'), require('./model/DirEntry'), require('./model/Execution'), require('./model/ExecutionResult'), require('./model/Match'), require('./model/RemoteAccess'), require('./model/RestError'), require('./model/RestOK'), require('./model/Session'), require('./model/Stats'), require('./model/Token'), require('./model/User'), require('./model/Workspace'), require('./api/AliasApi'), require('./api/AuthApi'), require('./api/RemotesApi'), require('./api/SessionApi'), require('./api/WfsApi'), require('./api/WorkspaceApi'));
   }
-}(function(ApiClient, Alias, ChildProcess, Credential, DirEntry, Execution, ExecutionResult, Match, RemoteAccess, RestError, RestOK, Session, Stats, Token, User, Workspace, AliasApi, AuthApi, OpsApi, RemotesApi, SessionApi, WfsApi, WorkspaceApi) {
+}(function(ApiClient, Alias, ChildProcess, Credential, DirEntry, Execution, ExecutionResult, Match, RemoteAccess, RestError, RestOK, Session, Stats, Token, User, Workspace, AliasApi, AuthApi, RemotesApi, SessionApi, WfsApi, WorkspaceApi) {
   'use strict';
 
   /**
@@ -155,11 +155,6 @@
      * @property {module:api/AuthApi}
      */
     AuthApi: AuthApi,
-    /**
-     * The OpsApi service constructor.
-     * @property {module:api/OpsApi}
-     */
-    OpsApi: OpsApi,
     /**
      * The RemotesApi service constructor.
      * @property {module:api/RemotesApi}
