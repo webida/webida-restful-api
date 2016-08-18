@@ -811,7 +811,7 @@
     },
     "/wfs/{wfsId}/ops/replace" : {
       "post" : {
-        "tags" : [ "ops" ],
+        "tags" : [ "wfs" ],
         "description" : "replace file contents with regex matching",
         "operationId" : "replace",
         "parameters" : [ {
@@ -872,7 +872,7 @@
     },
     "/wfs/{wfsId}/ops/search" : {
       "get" : {
-        "tags" : [ "ops" ],
+        "tags" : [ "wfs" ],
         "description" : "search files in some path, with given pattern",
         "operationId" : "search",
         "parameters" : [ {
